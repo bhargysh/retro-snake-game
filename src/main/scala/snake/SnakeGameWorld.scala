@@ -1,6 +1,6 @@
 package snake
 
-class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food]) {
+case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food]) {
 
 }
 

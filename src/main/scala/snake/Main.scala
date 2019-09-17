@@ -4,9 +4,13 @@ import dom.document
 
 object Main {
   def main(args: Array[String]): Unit = {
-//    println("Snake game!")
-//    println(document)
     appendPar(document.body, "Snake game!!!!")
+    val world = SnakeGameWorld.newSnakeGameWorld
+    val html = new SnakeGameHtml(document)
+    val renderedWorld = html.render(world)
+    val boardUI = document.createElement("div")
+    document.body.appendChild(boardUI)
+    boardUI.appendChild(renderedWorld)
   }
   def appendPar(targetNode: dom.Node, text: String): Unit = {
     val parNode = document.createElement("p")
