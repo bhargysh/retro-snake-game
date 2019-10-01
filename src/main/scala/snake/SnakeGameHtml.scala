@@ -12,7 +12,7 @@ class SnakeGameHtml(document: Document) {
         val cell = document.createElement("div")
         cell.setAttribute("style", s"grid-column: ${x+1}; grid-row: ${snakeGameWorld.board.height - y};")
         val text = document.createTextNode(
-          newSnakeGameWorld.board.cell(cellIndex(newSnakeGameWorld, x, y)).toString
+          cellEmoji(newSnakeGameWorld.board.cell(cellIndex(newSnakeGameWorld, x, y)))
         )
         cell.appendChild(text)
         board.appendChild(cell)
@@ -36,5 +36,11 @@ class SnakeGameHtml(document: Document) {
     snakeGameWorld.copy(board = snakeGameWorld.board.copy(cell = newCells))
 
   }
+
+  def cellEmoji(cell: Cell): String = cell match {
+    case SnakePart => "🐍"
+    case Wall => "🛑"
+    case EmptyCell => " "
+  }
+
 }
-//TODO: make the snake move, read from the keys

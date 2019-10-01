@@ -1,10 +1,26 @@
 package snake
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food]) {
+  def play(): SnakeGameWorld = {
+    val moveForward: Snake = snake.forward()
+    this.copy(snake = moveForward)
+  }
 
 }
 
-case class Snake(location: List[Location], length: Int, direction: Direction)
+case class Snake(location: List[Location], length: Int, direction: Direction) {
+  def forward(): Snake = {
+    val snakeHead = location.head
+    val newHead = direction match {
+      case Up => snakeHead.copy(y = snakeHead.y + 1)
+      case Down => snakeHead.copy(y = snakeHead.y - 1)
+      case Left => snakeHead.copy(x = snakeHead.x - 1)
+      case Right => snakeHead.copy(x = snakeHead.x + 1)
+    }
+    val newSnakeLocation = newHead :: location
+    this.copy(location = newSnakeLocation.take(length))
+  }
+}
 case class Location(x: Int, y: Int)
 case class Board(cell: Array[Cell], width: Int, height: Int)
 sealed trait Cell
