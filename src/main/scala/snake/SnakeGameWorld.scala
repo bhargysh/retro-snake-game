@@ -1,8 +1,12 @@
 package snake
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food]) {
-  def play(): SnakeGameWorld = {
-    val moveForward: Snake = snake.forward()
+  def play(direction: Option[Direction]): SnakeGameWorld = {
+    val newSnake = direction match {
+      case Some(value) => snake.copy(direction = value)
+      case None => snake
+    }
+    val moveForward: Snake = newSnake.forward()
     this.copy(snake = moveForward)
   }
 
@@ -23,16 +27,27 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
 }
 case class Location(x: Int, y: Int)
 case class Board(cell: Array[Cell], width: Int, height: Int)
+
 sealed trait Cell
 case object SnakePart extends Cell
 case object Wall extends Cell
 case object EmptyCell extends Cell
 case class Food(location: Location) //expiry time
+
 sealed trait Direction
 case object Up extends Direction
 case object Down extends Direction
 case object Left extends Direction
 case object Right extends Direction
+object Direction {
+  def fromStr(directionStr: String): Option[Direction] = directionStr match {
+    case "Up" => Some(Up)
+    case "Down" => Some(Down)
+    case "Left" => Some(Left)
+    case "Right" => Some(Right)
+    case _ => None
+  }
+}
 
 object SnakeGameWorld {
   private val emptyCells: Array[Cell] = Array.tabulate(100){ index =>

@@ -1,7 +1,7 @@
 package snake
 import org.scalajs.dom
 import dom.{Node, document, window}
-import org.scalajs.dom.raw.Element
+import org.scalajs.dom.raw.{Element, KeyboardEvent}
 
 
 object Main {
@@ -14,10 +14,19 @@ object Main {
     window.setTimeout(() => updateGame(world, html, renderedWorld, boardUI), 1000)
     document.body.appendChild(boardUI)
     boardUI.appendChild(renderedWorld)
+    document.addEventListener("keydown", (event: KeyboardEvent) => {
+      val maybeDirection = Keyboard.stringToDirection(event.key)
+      maybeDirection match {
+        case Some(value) => boardUI.setAttribute("data-direction", value.toString)
+        case None => None
+      }
+    })
   }
 
   private def updateGame(world: SnakeGameWorld, html: SnakeGameHtml, oldWorld: Node, boardUI: Element): Unit = {
-    val newWorld = world.play()
+    val maybeDirectionData: Option[String] = Option(boardUI.getAttribute("data-direction"))
+    val maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
+    val newWorld = world.play(maybeDirection)
     val newRenderedWorld = html.render(newWorld)
     boardUI.replaceChild(newRenderedWorld, oldWorld)
     window.setTimeout(() => updateGame(newWorld, html, newRenderedWorld, boardUI), 1000)
@@ -30,4 +39,6 @@ object Main {
     targetNode.appendChild(parNode)
   }
 }
-//TODO: collision with wall? user input for moving snake
+//TODO: opposite of current direction
+//TODO: collision with wall
+//TODO: animation
