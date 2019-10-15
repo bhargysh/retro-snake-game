@@ -3,8 +3,8 @@ package snake
 case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food]) {
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val newSnake = direction match {
-      case Some(value) => snake.copy(direction = value)
-      case None => snake
+      case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection)
+      case _ => snake
     }
     val moveForward: Snake = newSnake.forward()
     this.copy(snake = moveForward)
@@ -23,6 +23,10 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
     }
     val newSnakeLocation = newHead :: location
     this.copy(location = newSnakeLocation.take(length))
+  }
+  def validateDirection(newDirection: Direction): Boolean = direction match {
+    case Up | Down => newDirection == Left || newDirection == Right
+    case Left | Right => newDirection == Up || newDirection == Down
   }
 }
 case class Location(x: Int, y: Int)
