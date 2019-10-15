@@ -29,7 +29,9 @@ object Main {
     val newWorld = world.play(maybeDirection)
     val newRenderedWorld = html.render(newWorld)
     boardUI.replaceChild(newRenderedWorld, oldWorld)
-    window.setTimeout(() => updateGame(newWorld, html, newRenderedWorld, boardUI), 1000)
+    if (newWorld.isPlaying) {
+      window.setTimeout(() => updateGame(newWorld, html, newRenderedWorld, boardUI), 1000)
+    }
   }
 
   def appendPar(targetNode: dom.Node, text: String): Unit = {
@@ -39,6 +41,8 @@ object Main {
     targetNode.appendChild(parNode)
   }
 }
-//TODO: opposite of current direction
-//TODO: collision with wall
 //TODO: animation
+//TODO: game over rendering
+//TODO: putting food on board
+//TODO: snake eating food on board
+//TODO: tests

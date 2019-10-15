@@ -12,7 +12,7 @@ class SnakeGameHtml(document: Document) {
         val cell = document.createElement("div")
         cell.setAttribute("style", s"grid-column: ${x+1}; grid-row: ${snakeGameWorld.board.height - y};")
         val text = document.createTextNode(
-          cellEmoji(newSnakeGameWorld.board.cell(cellIndex(newSnakeGameWorld, x, y)))
+          cellEmoji(newSnakeGameWorld.board.cellAt(Location(x, y)))
         )
         cell.appendChild(text)
         board.appendChild(cell)
@@ -22,13 +22,9 @@ class SnakeGameHtml(document: Document) {
     board
   }
 
-  private def cellIndex(snakeGameWorld: SnakeGameWorld, x: Int, y: Int) = {
-    x + y * snakeGameWorld.board.width
-  }
-
   def putSnakeOn(snakeGameWorld: SnakeGameWorld): SnakeGameWorld = {
     val currentSnakeLocation = snakeGameWorld.snake.location.map {
-      case Location(x, y) => cellIndex(snakeGameWorld, x, y)
+      case Location(x, y) => snakeGameWorld.board.cellIndex(x, y)
     }
     val newCells = snakeGameWorld.board.cell.zipWithIndex.map{
       case (cell, index) => if(currentSnakeLocation.contains(index)) SnakePart else cell
