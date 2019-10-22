@@ -1,6 +1,6 @@
 package snake
 
-case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food], isPlaying: Boolean) {
+case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food], isPlaying: Boolean, moveNumber: Int) {
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val turnedSnake = direction match {
       case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection)
@@ -12,12 +12,23 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food], isPlay
     def isWall(location: Location): Boolean = {
       board.cellAt(location) == Wall
     }
-    if (isWall(snakeHead)) {
-      this.copy(snake = movedSnake, isPlaying = false)
+    val stillPlaying = !isWall(snakeHead)
+    val (updatedFood, updatedSnake) = if (stillPlaying) {
+      food match {
+        case Some(actualFood) => if (actualFood.location == movedSnake.location.head) {
+          (None, movedSnake.copy(length = movedSnake.length + 1))
+        } else if (moveNumber == actualFood.expiryTime) {
+          (None, movedSnake)
+        } else {
+          (food, movedSnake)
+        }
+        case None => (None, movedSnake)
+      }
+    } else {
+      (food, movedSnake)
     }
-    else {
-      this.copy(snake = movedSnake)
-    }
+
+    this.copy(snake = updatedSnake, isPlaying = stillPlaying, moveNumber = moveNumber + 1, food = updatedFood)
   }
 
 }
@@ -53,7 +64,9 @@ sealed trait Cell
 case object SnakePart extends Cell
 case object Wall extends Cell
 case object EmptyCell extends Cell
-case class Food(location: Location) //expiry time
+
+case object FoodCell extends Cell
+case class Food(location: Location, expiryTime: Int)
 
 sealed trait Direction
 case object Up extends Direction
@@ -84,12 +97,12 @@ object SnakeGameWorld {
   }
   val board = Board(emptyCells, 10, 10)
 
-  private val snake = Snake(List(Location(5, 5), Location(5,4)), 2, Up)
+  private val snake = Snake(List(Location(5, 5), Location(5,4)), 4, Up) //
 
-  val food: Option[Food] = None
+  val food: Option[Food] = Some(Food(Location(2,3), 20))
   val isPlaying: Boolean = true
 
   def newSnakeGameWorld = {
-    new SnakeGameWorld(snake, board, food, isPlaying)
+    new SnakeGameWorld(snake, board, food, isPlaying, moveNumber = 0)
   }
 }

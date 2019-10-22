@@ -23,11 +23,15 @@ class SnakeGameHtml(document: Document) {
   }
 
   def putSnakeOn(snakeGameWorld: SnakeGameWorld): SnakeGameWorld = {
-    val currentSnakeLocation = snakeGameWorld.snake.location.map {
+    def getIndex(location: Location): Int = location match {
       case Location(x, y) => snakeGameWorld.board.cellIndex(x, y)
+
     }
-    val newCells = snakeGameWorld.board.cell.zipWithIndex.map{
-      case (cell, index) => if(currentSnakeLocation.contains(index)) SnakePart else cell
+    val currentSnakeLocation = snakeGameWorld.snake.location.map(getIndex)
+    val currentFoodLocation = snakeGameWorld.food.map(someFood => getIndex(someFood.location))
+
+    val newCells = snakeGameWorld.board.cell.zipWithIndex.map {
+      case (cell, index) => if(currentSnakeLocation.contains(index)) SnakePart else if(currentFoodLocation.contains(index)) FoodCell else cell
     }
     snakeGameWorld.copy(board = snakeGameWorld.board.copy(cell = newCells))
 
@@ -37,6 +41,7 @@ class SnakeGameHtml(document: Document) {
     case SnakePart => "🐍"
     case Wall => "🛑"
     case EmptyCell => " "
+    case FoodCell => "🍕"
   }
 
 }
