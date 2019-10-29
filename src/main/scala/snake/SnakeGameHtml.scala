@@ -28,7 +28,10 @@ class SnakeGameHtml(document: Document) {
 
     }
     val currentSnakeLocation = snakeGameWorld.snake.location.map(getIndex)
-    val currentFoodLocation = snakeGameWorld.food.map(someFood => getIndex(someFood.location))
+    val currentFoodLocation = snakeGameWorld.food match {
+      case FoodPresent(location, _) => Some(getIndex(location))
+      case FoodAbsent(turns) => None
+    }
 
     val newCells = snakeGameWorld.board.cell.zipWithIndex.map {
       case (cell, index) => if(currentSnakeLocation.contains(index)) SnakePart else if(currentFoodLocation.contains(index)) FoodCell else cell

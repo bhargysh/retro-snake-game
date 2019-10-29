@@ -1,6 +1,9 @@
 package snake
 
-case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food], isPlaying: Boolean, moveNumber: Int) {
+import scala.util.Random
+
+case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
+  private val showFood: ShowFood = new ShowFood(new Random())
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val turnedSnake = direction match {
       case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection)
@@ -13,16 +16,20 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Option[Food], isPlay
       board.cellAt(location) == Wall
     }
     val stillPlaying = !isWall(snakeHead)
-    val (updatedFood, updatedSnake) = if (stillPlaying) {
+    val (updatedFood, updatedSnake): (Food, Snake) = if (stillPlaying) {
       food match {
-        case Some(actualFood) => if (actualFood.location == movedSnake.location.head) {
-          (None, movedSnake.copy(length = movedSnake.length + 1))
-        } else if (moveNumber == actualFood.expiryTime) {
-          (None, movedSnake)
+        case FoodPresent(location, expiryTime) => if (location == movedSnake.location.head) {
+          (FoodAbsent(turns = moveNumber + 10), movedSnake.copy(length = movedSnake.length + 1))
+        } else if (moveNumber == expiryTime) {
+          (FoodAbsent(turns = moveNumber + 10), movedSnake)
         } else {
           (food, movedSnake)
         }
-        case None => (None, movedSnake)
+        case FoodAbsent(turns) => if(turns == moveNumber) {
+          (showFood.placeFood(moveNumber, movedSnake, board), movedSnake)
+        } else {
+          (food, movedSnake)
+        }
       }
     } else {
       (food, movedSnake)
@@ -58,6 +65,13 @@ case class Board(cell: Array[Cell], width: Int, height: Int) {
   def cellIndex(x: Int, y: Int) = {
     x + y * width
   }
+  def locations: Set[Location] = {
+    Range(0, height).flatMap { y =>
+      Range(0, width).map { x =>
+          (Location(x, y))
+      }
+    }.toSet
+  }
 }
 
 sealed trait Cell
@@ -66,7 +80,9 @@ case object Wall extends Cell
 case object EmptyCell extends Cell
 
 case object FoodCell extends Cell
-case class Food(location: Location, expiryTime: Int)
+sealed trait Food
+case class FoodPresent(location: Location, expiryTime: Int) extends Food
+case class FoodAbsent(turns: Int) extends Food
 
 sealed trait Direction
 case object Up extends Direction
@@ -99,7 +115,7 @@ object SnakeGameWorld {
 
   private val snake = Snake(List(Location(5, 5), Location(5,4)), 4, Up) //
 
-  val food: Option[Food] = Some(Food(Location(2,3), 20))
+  val food: Food = FoodPresent(Location(2,3), 20)
   val isPlaying: Boolean = true
 
   def newSnakeGameWorld = {

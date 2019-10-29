@@ -41,7 +41,6 @@ object Main {
     targetNode.appendChild(parNode)
   }
 }
-//TODO: putting food on board --> not under snake
 //TODO: tests
 //TODO: animation
 //TODO: game over rendering
