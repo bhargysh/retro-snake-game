@@ -2,9 +2,9 @@ package snake
 
 import scala.util.Random
 
-class ShowFood(randomNumberGenerator: Random) {
+class FoodGenerator(randomNumberGenerator: Random) {
 
-  def placeFood(moveNumber: Int, snake: Snake, board: Board): Food = {
+  def apply(moveNumber: Int, snake: Snake, board: Board): Food = {
     val notAvailable: Set[Location] = snake.location.toSet
     val emptyLocations: Set[Location] = board.locations.filter { location =>
       board.cellAt(location) == EmptyCell

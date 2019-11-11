@@ -3,7 +3,7 @@ package snake
 import scala.util.Random
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
-  private val showFood: ShowFood = new ShowFood(new Random())
+  private val showFood: FoodGenerator = new FoodGenerator(new Random())
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val turnedSnake = direction match {
       case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection)
@@ -26,7 +26,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
           (food, movedSnake)
         }
         case FoodAbsent(turns) => if(turns == moveNumber) {
-          (showFood.placeFood(moveNumber, movedSnake, board), movedSnake)
+          (showFood.apply(moveNumber, movedSnake, board), movedSnake)
         } else {
           (food, movedSnake)
         }
