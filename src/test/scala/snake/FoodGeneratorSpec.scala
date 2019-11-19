@@ -6,6 +6,7 @@ import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
 import scala.util.Random
+import Generators._
 
 class FoodGeneratorSpec extends Specification with ScalaCheck {
   implicit val shrinkSnake: Shrink[Snake] = Shrink { case Snake(location, length, direction) =>
@@ -19,13 +20,7 @@ class FoodGeneratorSpec extends Specification with ScalaCheck {
       }
     }
   }
-  implicit val arbDirection: Arbitrary[Direction] = Arbitrary(Gen.oneOf(Up, Down, Left, Right))
-  implicit val arbLocation: Arbitrary[Location] = Arbitrary(
-    for {
-      x <- Gen.choose(1,8)
-      y <- Gen.choose(1, 8)
-    } yield Location(x, y)
-  )
+
   implicit val snakeGen: Arbitrary[Snake] = Arbitrary(
     for {
     length <- Gen.choose(2,20)
@@ -34,13 +29,15 @@ class FoodGeneratorSpec extends Specification with ScalaCheck {
     } yield Snake(location, length, direction)
   )
   "Food generator" should {
-    "generate food that is not on the snake" >> prop { (moveNumber:Int, snake: Snake) =>
+    "generate food that is not on the snake or wall" >> prop { (moveNumber:Int, snake: Snake) =>
       val food = new FoodGenerator(new Random())
       val result: Food = food(moveNumber, snake, SnakeGameWorld.board) //empty board as it does not change
       result should beLike[Food]{ case FoodPresent(location, expiryTime) =>
         expiryTime should beBetween(moveNumber + 5, moveNumber + 10).excludingEnd
+        snake.location should not(contain(location))
+        location.x should beBetween(1, 8)
+        location.y should beBetween(1, 8)
       }
-    //TODO: test location (not in the wall or on snake)
     }
   }
 
