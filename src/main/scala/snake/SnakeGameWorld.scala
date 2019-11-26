@@ -6,7 +6,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
   private val showFood: FoodGenerator = new FoodGenerator(new Random())
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val turnedSnake = direction match {
-      case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection)
+      case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection) //TODO: should this be a method on snake?
       case _ => snake
     }
 
@@ -57,7 +57,7 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
     case Left | Right => newDirection == Up || newDirection == Down
   }
 }
-//TODO; write a test for Snake class
+//TODO: write a test for Snake class
 
 case class Location(x: Int, y: Int)
 case class Board(cell: Array[Cell], width: Int, height: Int) {
