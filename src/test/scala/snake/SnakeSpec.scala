@@ -41,10 +41,24 @@ class SnakeSpec extends Specification with ScalaCheck {
     }
     "forward" should {
       implicit val arbSnake: Arbitrary[Snake] = {
+        def adjacentLocations(location: Location): List[Location] = {
+          List(location.copy(x = location.x + 1), location.copy(x = location.x - 1), location.copy(y = location.y + 1),  location.copy(y = location.y - 1))
+        }
+
         def createLocation(location: List[Location], length: Int): Gen[List[Location]] = for {
-          nextLocation <- arbitrary[Location] //TODO: test for adjacent locations
-          newLocation = nextLocation :: location
-          result <- if(newLocation.length < length) Gen.frequency((4, createLocation(newLocation, length)), (1, Gen.const(newLocation))) else Gen.const(newLocation)
+          possibleNextLocations <- Gen.const(adjacentLocations(location.head))
+          result <- possibleNextLocations.filter(l => !location.contains(l)) match {
+            case Nil => Gen.const(location)
+            case nonEmpty => for {
+              nextLocation <- Gen.oneOf(nonEmpty)
+              newLocation = nextLocation :: location
+              result <- if (location.length < length) {
+                Gen.frequency((4, createLocation(newLocation, length)), (1, Gen.const(newLocation)))
+              } else {
+                Gen.const(newLocation)
+              }
+            } yield result
+          }
         } yield result
 
         Arbitrary(
@@ -58,6 +72,13 @@ class SnakeSpec extends Specification with ScalaCheck {
       }
       "location is no longer than length of snake" >> prop { snake: Snake =>
         snake.forward().location must haveSize(beLessThanOrEqualTo(snake.length))
+      }
+      "does not change the length or direction" >> prop { snake: Snake =>
+        snake.forward().length must beEqualTo(snake.length)
+        snake.forward().direction must beEqualTo(snake.direction)
+      }
+      "new location's tail is in the old location" >> prop { snake: Snake =>
+        snake.forward().location.tail must ((l: List[Location]) => l.forall(snake.location.contains))
       }
     }
   }

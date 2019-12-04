@@ -57,7 +57,6 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
     case Left | Right => newDirection == Up || newDirection == Down
   }
 }
-//TODO: write a test for Snake class
 
 case class Location(x: Int, y: Int)
 case class Board(cell: Array[Cell], width: Int, height: Int) {
