@@ -1,10 +1,12 @@
 package snake
 
 import org.scalajs.dom.{Node, document}
-import org.scalatest.funspec.AnyFunSpec
+import org.specs2.mutable.Specification
+//import org.scalatest.funspec.AnyFunSpec
 import org.scalajs.dom.Window
 
-class SnakeGameHtmlSpec extends AnyFunSpec  {
+class SnakeGameHtmlSpec extends Specification  {
+  println("<<<<<<<<<<<<<<<<<<<<<<<<<")
   def countText(node: Node, text: String): Int = {
     if (node.nodeType === Node.TEXT_NODE) {
       if (node.nodeValue === text) {
@@ -22,11 +24,12 @@ class SnakeGameHtmlSpec extends AnyFunSpec  {
   }
   val jsDom: JSDom = new JSDom
 
-  describe("SnakeGameHtml") {
-    it("renders snake game world") {
+  "SnakeGameHtml" should {
+    "render snake game world" in {
       val snakeHtml = new SnakeGameHtml(jsDom.window.document)
       val node = snakeHtml.render(SnakeGameWorld.newSnakeGameWorld)
-      assert(countText(node, "🐍") === 2)
+      println(node)
+      countText(node, "🐍") must beEqualTo(2)
     }
   }
 
