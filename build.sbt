@@ -1,37 +1,29 @@
 name := "snake-game"
 
-enablePlugins(ScalaJSBundlerPlugin) // , ScalaJSJUnitPlugin
+version := "0.1"
 
 scalaVersion := "2.12.9"
-val specs2Version = "4.7.0"
 
+enablePlugins(ScalaJSPlugin, ScalaJSBundlerPlugin)
+
+// This is an application with a main method
 scalaJSUseMainModuleInitializer := true
-
-libraryDependencies += "org.scala-js" %%% "scalajs-dom" % "1.0.0"
-libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % "1.6.1",
-  "org.typelevel" %% "cats-effect" % "1.4.0",
-  "org.specs2"    %% "specs2-core" % specs2Version % Test,
-  "org.specs2"    %% "specs2-scalacheck" % specs2Version % Test,
-)
-
-npmDependencies in Compile += "snabbdom" -> "0.5.3"
-
-npmDevDependencies in Compile += "uglifyjs-webpack-plugin" -> "1.2.2"
-
-// Use a different Webpack configuration file for production
-webpackConfigFile in fullOptJS := Some(baseDirectory.value / "prod.webpack.config.js")
-
-// Execute the tests in browser-like environment
-requireJsDomEnv in Test := true
-
-webpackBundlingMode := BundlingMode.LibraryAndApplication()
 
 useYarn := true
 
-// HtmlUnit does not support ECMAScript 2015
-scalaJSLinkerConfig ~= { _.withESFeatures(_.withUseECMAScript2015(false)) }
+jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 
-ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet
+val specs2Version = "4.9.2"
 
-//TODO: try one last test framework JUnit or uTest
+libraryDependencies ++= Seq(
+  "org.typelevel" %% "cats-core" % "1.6.1",
+  "org.typelevel" %% "cats-effect" % "1.4.0",
+  "org.specs2"   %%% "specs2-core" % specs2Version % Test,
+  "org.specs2"   %%% "specs2-scalacheck" % specs2Version % Test,
+  "com.lihaoyi"  %%% "utest" % "0.7.4" % Test,
+  "org.scala-js" %%% "scalajs-dom" % "1.0.0",
+)
+
+requireJsDomEnv in Test := true
+
+testFrameworks := Seq(TestFrameworks.Specs2)
