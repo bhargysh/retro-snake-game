@@ -29,12 +29,15 @@ class SnakeGameHtml(document: Document) {
     }
     val currentSnakeLocation = snakeGameWorld.snake.location.map(getIndex)
     val currentFoodLocation = snakeGameWorld.food match {
-      case FoodPresent(location, _) => Some(getIndex(location))
-      case FoodAbsent(turns) => None
+      case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some(getIndex(location))
+      case _ => None
     }
 
     val newCells = snakeGameWorld.board.cell.zipWithIndex.map {
-      case (cell, index) => if(currentSnakeLocation.contains(index)) SnakePart else if(currentFoodLocation.contains(index)) FoodCell else cell
+      case (cell, index) =>
+        if(currentSnakeLocation.contains(index)) SnakePart
+        else if(currentFoodLocation.contains(index)) FoodCell
+        else cell
     }
     snakeGameWorld.copy(board = snakeGameWorld.board.copy(cell = newCells))
 
@@ -45,6 +48,12 @@ class SnakeGameHtml(document: Document) {
     case Wall => "🛑"
     case EmptyCell => " "
     case FoodCell => "🍕"
+  }
+
+  private def foodVisible(expiryTime: Int, moveNumber: Int): Boolean = {
+    val blinkTime = expiryTime - moveNumber
+    if (blinkTime > 4) true
+    else blinkTime % 2 == 0
   }
 
 }

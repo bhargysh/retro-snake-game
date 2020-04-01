@@ -5,9 +5,7 @@ import org.scalajs.dom.raw.{Element, KeyboardEvent}
 
 import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 
-@JSExportTopLevel("Main")
 object Main {
-  @JSExport
   def main(args: Array[String]): Unit = {
     appendPar(document.body, "Snake game!!!!")
     val world = SnakeGameWorld.newSnakeGameWorld
@@ -45,5 +43,5 @@ object Main {
   }
 }
 //TODO: tests
-//TODO: animation
+//TODO: animation, make the food blink when its about to disappear
 //TODO: game over rendering
