@@ -1,25 +1,46 @@
 package snake
 
+import org.scalajs.dom.raw.Element
 import org.scalajs.dom.{Document, Node}
 
 class SnakeGameHtml(document: Document) {
+  private def createElement(tag: String, parentElement: Element, classes: String*): Element = {
+    val childElement = document.createElement(tag)
+    classes.foreach { className =>
+      childElement.classList.add(className)
+    }
+    parentElement.appendChild(childElement)
+    childElement
+  }
+
+  private def createTextElement(data: String, tag: String, parentElement: Element, classes: String*): Element = {
+    val text = document.createTextNode(data)
+    val element = createElement(tag, parentElement, classes:_*)
+    element.appendChild(text)
+    element
+  }
+
   def render(snakeGameWorld: SnakeGameWorld): Node = {
-    val board = document.createElement("div")
-    board.classList.add("board")
+    val container = document.createElement("div")
+    container.classList.add("container")
+
+    val board = createElement("div", container, "board")
+
+    if (!snakeGameWorld.isPlaying) {
+      val gameOverElement = createElement("div", container,"gameover")
+      createTextElement("GAME OVER", "span", gameOverElement, "gameover-span")
+    }
+
     val newSnakeGameWorld = putSnakeOn(snakeGameWorld)
     Range(0, snakeGameWorld.board.height).map { y =>
       Range(0, snakeGameWorld.board.width).map { x =>
-        val cell = document.createElement("div")
-        cell.setAttribute("style", s"grid-column: ${x+1}; grid-row: ${snakeGameWorld.board.height - y};")
-        val text = document.createTextNode(
-          cellEmoji(newSnakeGameWorld.board.cellAt(Location(x, y)))
+        val cell = createTextElement(
+          cellEmoji(newSnakeGameWorld.board.cellAt(Location(x, y))), "div", board
         )
-        cell.appendChild(text)
-        board.appendChild(cell)
+        cell.setAttribute("style", s"grid-column: ${x+1}; grid-row: ${snakeGameWorld.board.height - y};")
       }
     }
-
-    board
+    container
   }
 
   def putSnakeOn(snakeGameWorld: SnakeGameWorld): SnakeGameWorld = {

@@ -46,5 +46,17 @@ class SnakeGameHtmlSpec extends Specification {
       val node = snakeHtml.render(snakeGameWorldWithFood)
       findNodesWithText(node, "🍕") must beEmpty
     }
+    "render the game over sign if user is no longer playing" in {
+      val snakeGameHtml = new SnakeGameHtml(document)
+      val snakeGameWorldNotPlaying = SnakeGameWorld.newSnakeGameWorld.copy(isPlaying = false)
+      val node = snakeGameHtml.render(snakeGameWorldNotPlaying)
+      findNodesWithText(node, "GAME OVER") must not(beEmpty)
+    }
+    "not render the game over sign if user playing" in {
+      val snakeGameHtml = new SnakeGameHtml(document)
+      val snakeGameWorldPlaying = SnakeGameWorld.newSnakeGameWorld.copy(isPlaying = true)
+      val node = snakeGameHtml.render(snakeGameWorldPlaying)
+      findNodesWithText(node, "GAME OVER") must beEmpty
+    }
   }
 }

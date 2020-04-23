@@ -11,7 +11,7 @@ scalaJSUseMainModuleInitializer := true
 
 useYarn := true
 
-jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
+//jsEnv := new org.scalajs.jsenv.jsdomnodejs.JSDOMNodeJSEnv
 
 val specs2Version = "4.9.2"
 

@@ -42,6 +42,5 @@ object Main {
     targetNode.appendChild(parNode)
   }
 }
-//TODO: tests
-//TODO: animation, make the food blink when its about to disappear
-//TODO: game over rendering
+
+//TODO: could we use IO in this?

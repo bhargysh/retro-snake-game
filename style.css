@@ -1,5 +1,20 @@
+.container {
+    position: relative;
+}
+
 .board {
     display: grid;
     grid-template-columns: repeat(10, 50px [col-start]);
     grid-template-rows: repeat(10, 50px [row-start]);
+}
+
+.gameover {
+    position: absolute;
+    background-color: red;
+    left: 20%;
+    bottom: 50%;
+}
+
+.gameover-span {
+    vertical-align: middle;
 }
