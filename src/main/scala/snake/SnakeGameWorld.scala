@@ -3,33 +3,22 @@ package snake
 import scala.util.Random
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
-  private val showFood: FoodGenerator = new FoodGenerator(new Random())
+  private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val turnedSnake = direction match {
-      case Some(newDirection) if snake.validateDirection(newDirection) => snake.copy(direction = newDirection) //TODO: should this be a method on snake?
+      case Some(newDirection) => snake.turn(newDirection)
       case _ => snake
     }
-
     val movedSnake: Snake = turnedSnake.forward()
     val snakeHead = movedSnake.location.head
-    def isWall(location: Location): Boolean = {
-      board.cellAt(location) == Wall
-    }
-    val stillPlaying = !isWall(snakeHead)
+    val stillPlaying = !board.isWall(snakeHead)
+
     val (updatedFood, updatedSnake): (Food, Snake) = if (stillPlaying) {
-      food match {
-        case FoodPresent(location, expiryTime) => if (location == movedSnake.location.head) {
-          (FoodAbsent(turns = moveNumber + 10), movedSnake.copy(length = movedSnake.length + 1))
-        } else if (moveNumber == expiryTime) {
-          (FoodAbsent(turns = moveNumber + 10), movedSnake)
-        } else {
-          (food, movedSnake)
-        }
-        case FoodAbsent(turns) => if(turns == moveNumber) {
-          (showFood.apply(moveNumber, movedSnake, board), movedSnake)
-        } else {
-          (food, movedSnake)
-        }
+      food.eat(movedSnake.location.head, moveNumber) match {
+        case FoodEaten => (FoodAbsent(turns = moveNumber + 10), movedSnake.copy(length = movedSnake.length + 1))
+        case FoodNotEaten => (food, movedSnake)
+        case FoodExpired => (FoodAbsent(turns = moveNumber + 10), movedSnake)
+        case FoodAdded => (foodGenerator.apply(moveNumber, snake, board), movedSnake)
       }
     } else {
       (food, movedSnake)
@@ -52,7 +41,13 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
     val newSnakeLocation = newHead :: location
     this.copy(location = newSnakeLocation.take(length))
   }
-  def validateDirection(newDirection: Direction): Boolean = direction match {
+
+  def turn(newDirection: Direction): Snake = {
+    if (validateDirection(newDirection)) this.copy(direction = newDirection)
+    else this
+  }
+
+  private def validateDirection(newDirection: Direction): Boolean = direction match {
     case Up | Down => newDirection == Left || newDirection == Right
     case Left | Right => newDirection == Up || newDirection == Down
   }
@@ -73,6 +68,9 @@ case class Board(cell: Array[Cell], width: Int, height: Int) {
       }
     }.toSet
   }
+  def isWall(location: Location): Boolean = {
+    this.cellAt(location) == Wall
+  }
 }
 
 sealed trait Cell
@@ -81,9 +79,35 @@ case object Wall extends Cell
 case object EmptyCell extends Cell
 
 case object FoodCell extends Cell
-sealed trait Food
-case class FoodPresent(location: Location, expiryTime: Int) extends Food
-case class FoodAbsent(turns: Int) extends Food
+sealed trait Food {
+  def eat(snakeHead: Location, moveNumber: Int): FoodAction
+}
+case class FoodPresent(location: Location, expiryTime: Int) extends Food {
+  override def eat(snakeHead: Location, moveNumber: Int): FoodAction = {
+    if (location == snakeHead) {
+      FoodEaten
+    } else if (moveNumber == expiryTime) {
+      FoodExpired
+    } else {
+      FoodNotEaten
+    }
+  }
+}
+case class FoodAbsent(turns: Int) extends Food {
+  override def eat(snakeHead: Location, moveNumber: Int): FoodAction = {
+    if(turns == moveNumber) {
+      FoodAdded
+    } else {
+      FoodNotEaten
+    }
+  }
+}
+
+sealed trait FoodAction
+case object FoodEaten extends FoodAction
+case object FoodNotEaten extends FoodAction
+case object FoodExpired extends FoodAction
+case object FoodAdded extends FoodAction
 
 sealed trait Direction
 case object Up extends Direction

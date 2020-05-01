@@ -9,14 +9,14 @@ import org.specs2.ScalaCheck
 
 class SnakeSpec extends Specification with ScalaCheck {
   "Snake" >> {
-    "validateDirection" should {
+    "turn" should {
       "should turn towards other axis" in {
         val listOfDirections = List((Up, Left), (Down, Right), (Right, Up), (Left, Down),
           (Up, Right), (Down, Left), (Right, Down), (Left, Up))
         Fragments.foreach(listOfDirections) { case (oldDirection, newDirection) =>
           s"when snake is facing ${oldDirection}" in {
             val snake = Snake(List(Location(2, 2), Location(2, 3)), 2, oldDirection)
-            snake.validateDirection(newDirection) must beTrue
+            snake.turn(newDirection).direction mustEqual newDirection
           }
         }
       }
@@ -25,7 +25,7 @@ class SnakeSpec extends Specification with ScalaCheck {
         Fragments.foreach(listOfDirections) { case (oldDirection, newDirection) =>
           s"when snake is facing ${oldDirection}" in {
             val snake = Snake(List(Location(2, 2), Location(2, 3)), 2, oldDirection)
-            snake.validateDirection(newDirection) must beFalse
+            snake.turn(newDirection).direction mustEqual oldDirection
           }
         }
       }
@@ -34,7 +34,7 @@ class SnakeSpec extends Specification with ScalaCheck {
         Fragments.foreach(listOfDirections) { direction =>
           s"when snake is facing ${direction}" in {
             val snake = Snake(List(Location(2, 2), Location(2, 3)), 2, direction)
-            snake.validateDirection(direction) must beFalse
+            snake.turn(direction).direction mustEqual direction
           }
         }
       }
