@@ -14,20 +14,35 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
     val stillPlaying = !board.isWall(snakeHead)
 
     val (updatedFood, updatedSnake): (Food, Snake) = if (stillPlaying) {
-      food.eat(movedSnake.location.head, moveNumber) match {
-        case FoodEaten => (FoodAbsent(turns = moveNumber + 10), movedSnake.copy(length = movedSnake.length + 1))
-        case FoodNotEaten => (food, movedSnake)
-        case FoodExpired => (FoodAbsent(turns = moveNumber + 10), movedSnake)
-        case FoodAdded => (foodGenerator.apply(moveNumber, snake, board), movedSnake)
+      food.eat(movedSnake.location.head, moveNumber).foldLeft((food, movedSnake)) { (state, action) =>
+      val (f, s) = state
+        action match {
+          case AddFood => (FoodAbsent(turns = moveNumber + 10), s)
+          case FoodReady => (foodGenerator.apply(moveNumber, snake, board), s)
+          case GrowSnake => (f, s.copy(length = s.length + 1))
+        }
       }
+//      TODO: tests for these new actions and fix broken tests
+//      TODO: actions for snake moving
     } else {
       (food, movedSnake)
     }
 
-    this.copy(snake = updatedSnake, isPlaying = stillPlaying, moveNumber = moveNumber + 1, food = updatedFood)
+    this.copy(
+      snake = updatedSnake,
+      isPlaying = stillPlaying,
+      moveNumber = moveNumber + 1,
+      food = updatedFood)
   }
-
+//TODO: think about play method, logic is a bit hidden
 }
+sealed trait SnakeAction {
+  def forward(): Snake
+  def turn(direction: Direction): Snake
+}
+//case object ForwardSnake extends SnakeAction
+//case class TurnSnake(direction: Direction) extends SnakeAction
+
 
 case class Snake(location: List[Location], length: Int, direction: Direction) {
   def forward(): Snake = {
@@ -77,37 +92,36 @@ sealed trait Cell
 case object SnakePart extends Cell
 case object Wall extends Cell
 case object EmptyCell extends Cell
-
 case object FoodCell extends Cell
+
 sealed trait Food {
-  def eat(snakeHead: Location, moveNumber: Int): FoodAction
+  def eat(snakeHead: Location, moveNumber: Int): Vector[FoodAction]
 }
 case class FoodPresent(location: Location, expiryTime: Int) extends Food {
-  override def eat(snakeHead: Location, moveNumber: Int): FoodAction = {
+  override def eat(snakeHead: Location, moveNumber: Int): Vector[FoodAction] = {
     if (location == snakeHead) {
-      FoodEaten
+      Vector(AddFood, GrowSnake)
     } else if (moveNumber == expiryTime) {
-      FoodExpired
+      Vector(AddFood)
     } else {
-      FoodNotEaten
+      Vector.empty
     }
   }
 }
 case class FoodAbsent(turns: Int) extends Food {
-  override def eat(snakeHead: Location, moveNumber: Int): FoodAction = {
-    if(turns == moveNumber) {
-      FoodAdded
+  override def eat(snakeHead: Location, moveNumber: Int): Vector[FoodAction] = {
+    if(turns == moveNumber) { //TODO: revisit this logic, similar to FoodPresent eat()
+      Vector(FoodReady)
     } else {
-      FoodNotEaten
+      Vector.empty
     }
   }
 }
 
 sealed trait FoodAction
-case object FoodEaten extends FoodAction
-case object FoodNotEaten extends FoodAction
-case object FoodExpired extends FoodAction
-case object FoodAdded extends FoodAction
+case object GrowSnake extends FoodAction
+case object AddFood extends FoodAction
+case object FoodReady extends FoodAction
 
 sealed trait Direction
 case object Up extends Direction
@@ -138,7 +152,7 @@ object SnakeGameWorld {
   }
   val board = Board(emptyCells, 10, 10)
 
-  private val snake = Snake(List(Location(5, 5), Location(5,4)), 4, Up) //
+  private val snake = Snake(List(Location(5, 5), Location(5,4)), 4, Up)
 
   val food: Food = FoodPresent(Location(2,3), 20)
   val isPlaying: Boolean = true
