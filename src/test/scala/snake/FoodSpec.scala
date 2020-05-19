@@ -22,8 +22,7 @@ class FoodSpec extends Specification {
     }
     "return food not eaten if turns is not same as move number" in {
       val food = FoodAbsent(5)
-      food.eat(Location(3,2), 4) mustEqual FoodAdded
+      food.eat(Location(3,2), 4) mustEqual FoodNotEaten
     }
   }
-//TODO: Food unchanged?
 }

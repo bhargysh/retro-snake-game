@@ -28,6 +28,16 @@ class BoardSpec extends Specification with ScalaCheck {
         board.cellIndex(location.x, location.y)
       }.sorted should containAllOf(Range(0, width * height)).inOrder
     }
+    "return true if cell is a wall" in {
+      val board = SnakeGameWorld.board
+      val wallLocation = Location(9, 9)
+      board.isWall(wallLocation) should beTrue
+    }
+    "return false if cell is not a wall" in {
+      val board = SnakeGameWorld.board
+      val wallLocation = Location(8, 8)
+      board.isWall(wallLocation) should beFalse
+    }
   }
   case class Dimension(value: Int)
 
