@@ -4,29 +4,36 @@ import scala.util.Random
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
-  def play(direction: Option[Direction]): SnakeGameWorld = {
-    val turnedSnake = direction match {
-      case Some(newDirection) => snake.turn(newDirection)
-      case _ => snake
-    }
-    val movedSnake: Snake = turnedSnake.forward()
-    val snakeHead = movedSnake.location.head
-    val stillPlaying = !board.isWall(snakeHead)
 
-    val (updatedFood, updatedSnake): (Food, Snake) = if (stillPlaying) {
-      food.eat(movedSnake.location.head, moveNumber).foldLeft((food, movedSnake)) { (state, action) =>
-      val (f, s) = state
-        action match {
-          case AddFood => (FoodAbsent(turns = moveNumber + 10), s)
-          case FoodReady => (foodGenerator.apply(moveNumber, snake, board), s)
-          case GrowSnake => (f, s.copy(length = s.length + 1))
+  def play(direction: Option[Direction]): SnakeGameWorld = {
+//    val turnedSnake = direction match {
+//      case Some(newDirection) => snake.turn(newDirection)
+//      case _ => snake
+//    }
+//    val movedSnake: Snake = turnedSnake.forward()
+//    val snakeHead = movedSnake.location.head
+//    val stillPlaying = !board.isWall(snakeHead)
+
+    val vectorAction: Vector[FoodAction] = snake.move(direction)
+    val vectorFoodAction = food.eat(snake.location.head, moveNumber) //TODO: should be updated snake not 'snake', same for line 21
+    val actions = vectorAction ++ vectorFoodAction
+//    fourth action
+
+    val (stillPlaying, updatedFood, updatedSnake): (Boolean, Food, Snake) = actions.foldLeft((isPlaying, food, snake)) { (state, action) =>
+        val (p, f, s, a) = state
+//      if the action is movedsnake, do food.eat()?
+        if (p) {
+          action match {
+            case AddFood => (p, FoodAbsent(turns = moveNumber + 10), s)
+            case FoodReady => (p, foodGenerator.apply(moveNumber, snake, board), s)
+            case GrowSnake => (p, f, s.copy(length = s.length + 1))
+            case MovedSnake(updatedSnake) => (isPlayingCurrently(updatedSnake), f, updatedSnake)
+          }
+        }
+        else {
+          state
         }
       }
-//      TODO: tests for these new actions and fix broken tests
-//      TODO: actions for snake moving
-    } else {
-      (food, movedSnake)
-    }
 
     this.copy(
       snake = updatedSnake,
@@ -34,14 +41,14 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
       moveNumber = moveNumber + 1,
       food = updatedFood)
   }
-//TODO: think about play method, logic is a bit hidden
+
+  def isPlayingCurrently(snake: Snake): Boolean = {
+    val snakeHead = snake.location.head
+    !board.isWall(snakeHead)
+  }
+
+  //TODO: think about play method, logic is a bit hidden
 }
-sealed trait SnakeAction {
-  def forward(): Snake
-  def turn(direction: Direction): Snake
-}
-//case object ForwardSnake extends SnakeAction
-//case class TurnSnake(direction: Direction) extends SnakeAction
 
 
 case class Snake(location: List[Location], length: Int, direction: Direction) {
@@ -65,6 +72,15 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
   private def validateDirection(newDirection: Direction): Boolean = direction match {
     case Up | Down => newDirection == Left || newDirection == Right
     case Left | Right => newDirection == Up || newDirection == Down
+  }
+
+  def move(direction: Option[Direction]): Vector[FoodAction] = {
+    val turnedSnake = direction match {
+      case Some(newDirection) => turn(newDirection)
+      case _ => this
+    }
+    val movedSnake: Snake = turnedSnake.forward()
+    Vector(MovedSnake(movedSnake))
   }
 }
 
@@ -122,6 +138,7 @@ sealed trait FoodAction
 case object GrowSnake extends FoodAction
 case object AddFood extends FoodAction
 case object FoodReady extends FoodAction
+case class MovedSnake(newSnake: Snake) extends FoodAction
 
 sealed trait Direction
 case object Up extends Direction
