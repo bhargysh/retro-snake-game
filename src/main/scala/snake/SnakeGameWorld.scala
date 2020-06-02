@@ -1,39 +1,39 @@
 package snake
 
+import java.util
+import scala.collection.JavaConverters._
+
 import scala.util.Random
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
-//    val turnedSnake = direction match {
-//      case Some(newDirection) => snake.turn(newDirection)
-//      case _ => snake
-//    }
-//    val movedSnake: Snake = turnedSnake.forward()
-//    val snakeHead = movedSnake.location.head
-//    val stillPlaying = !board.isWall(snakeHead)
-
     val vectorAction: Vector[FoodAction] = snake.move(direction)
-    val vectorFoodAction = food.eat(snake.location.head, moveNumber) //TODO: should be updated snake not 'snake', same for line 21
-    val actions = vectorAction ++ vectorFoodAction
-//    fourth action
+    val queue = new util.ArrayDeque[FoodAction]()
+    queue.addAll(vectorAction.asJava)
 
-    val (stillPlaying, updatedFood, updatedSnake): (Boolean, Food, Snake) = actions.foldLeft((isPlaying, food, snake)) { (state, action) =>
-        val (p, f, s, a) = state
-//      if the action is movedsnake, do food.eat()?
-        if (p) {
-          action match {
-            case AddFood => (p, FoodAbsent(turns = moveNumber + 10), s)
-            case FoodReady => (p, foodGenerator.apply(moveNumber, snake, board), s)
-            case GrowSnake => (p, f, s.copy(length = s.length + 1))
-            case MovedSnake(updatedSnake) => (isPlayingCurrently(updatedSnake), f, updatedSnake)
+    var stillPlaying = isPlaying
+    var updatedFood = food
+    var updatedSnake = snake
+
+    while(!queue.isEmpty) {
+      val action = queue.removeFirst()
+        val (p, f, s) = (stillPlaying, updatedFood, updatedSnake)
+      if (p) {
+        val (newP, newF, newS, newA) = action match {
+            case AddFood => (p, FoodAbsent(turns = moveNumber + 10), s, Vector.empty)
+            case FoodReady => (p, foodGenerator.apply(moveNumber, snake, board), s, Vector.empty)
+            case GrowSnake => (p, f, s.copy(length = s.length + 1), Vector.empty)
+            case MovedSnake(updatedSnake) => (isPlayingCurrently(updatedSnake), f, updatedSnake, food.eat(updatedSnake.location.head, moveNumber))
           }
-        }
-        else {
-          state
-        }
+        stillPlaying = newP
+        updatedFood = newF
+        updatedSnake = newS
+        queue.addAll(newA.asJava)
       }
+    }
+
 
     this.copy(
       snake = updatedSnake,
