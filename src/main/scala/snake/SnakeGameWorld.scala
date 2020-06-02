@@ -134,12 +134,6 @@ case class FoodAbsent(turns: Int) extends Food {
   }
 }
 
-sealed trait FoodAction
-case object GrowSnake extends FoodAction
-case object AddFood extends FoodAction
-case object FoodReady extends FoodAction
-case class MovedSnake(newSnake: Snake) extends FoodAction
-
 sealed trait Direction
 case object Up extends Direction
 case object Down extends Direction
