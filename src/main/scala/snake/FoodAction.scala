@@ -11,10 +11,25 @@ case object FoodReady extends FoodAction
 case class MovedSnake(newSnake: Snake) extends FoodAction
 
 sealed trait Script[F[_], A]
-//TODO: Create Monad instance
 
 case class Pure[F[_], A](a: A) extends Script[F, A]
 case class Bind[F[_], A](a: F[Script[F, A]]) extends Script[F, A]
+
+object Script {
+//  type SF[F[_]] = ({ type L[A] = Script[F, A] })#L //script takes [_,_] and monad takes [_]
+
+  implicit def monadScript[F[_]: Functor]: Monad[({ type f[x] = Script[F, x] })#f] = new Monad[({ type f[x] = Script[F, x] })#f] {
+    override def pure[A](x: A): Script[F,A] = Pure(x)
+
+    override def flatMap[A, B](fa: Script[F,A])(f: A => Script[F,B]): Script[F,B] = fa match {
+      case Bind(y) => Bind(y.map((sf: Script[F, A]) => flatMap(sf)(f))) // F[Script[F, B]] => Script[F, B]
+      case Pure(x) => f(x)
+    }
+//TODO: this
+    override def tailRecM[A, B](a: A)(f: A => Script[F, Either[A, B]]): Script[F,B] = ???
+  }
+}
+
 
 trait Interpreter[F[_], G[_]] { // F might be FoodAction and G might be IO, needs to interpret F in terms of G
   def interpret[A](fOfA: F[A]): G[A] // natural transformation => like map but on the outside not the inside
@@ -22,22 +37,22 @@ trait Interpreter[F[_], G[_]] { // F might be FoodAction and G might be IO, need
 
 object Interpreter {
   def main(args: Array[String]): Unit = {
+    type SF[A] = Script[Wrap, A]
+    implicit val monadWTF: Monad[SF] = Script.monadScript
     val script: Pure[Wrap, String] = Pure("🌈") // Pure[F,A]
-    val bindScript = for {
-      growSnake <- FoodAction.liftF(FoodActionWrapper(GrowSnake))
-      s <- script
-    } yield s
+    val bindScript = monadWTF.flatMap(FoodAction.liftF(FoodActionWrapper(GrowSnake)))(_ => monadWTF.map(script)(s => s))
+
     val interpreter = new Interpreter[Wrap, Id] {
       override def interpret[A](wrappedFoodAction: Wrap[A]): Id[A] = {
         wrappedFoodAction match {
           case FoodActionWrapper(foodAction) => println(foodAction)
-          case FoodActionWrapper2(scriptWrapAndA) => println(???)
+          case FoodActionWrapper2(wrapSomething, func) => func(interpret(wrapSomething))
         }
       }
     }
     println(FoodAction.evaluate(script, interpreter))
     println("❄❄❄❄❄❄❄❄❄❄❄❄❄❄️")
-//    println(FoodAction.evaluate(bindScript, interpreter))
+    println(FoodAction.evaluate(bindScript, interpreter))
   }
 }
 
@@ -46,6 +61,7 @@ object FoodAction {
     case Pure(a) => Applicative[G].pure(a)
     case Bind(x) => interpreter.interpret(x).flatMap((a: Script[F, A]) => evaluate(a, interpreter))
   }
+
   def liftF[F[_]: Functor, A](fOfA: F[A]): Script[F, A] = Bind(fOfA.map((x: A) => Pure(x)))
 }
 
