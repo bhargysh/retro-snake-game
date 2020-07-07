@@ -1,9 +1,13 @@
 package snake
 
 import java.util
-import scala.collection.JavaConverters._
 
+import cats.data.State
+
+import scala.collection.JavaConverters._
 import scala.util.Random
+
+case class PlayState(actions: Vector[FoodAction], playing: Boolean, food: Food, snake: Snake)
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
@@ -11,7 +15,29 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
   def play(direction: Option[Direction]): SnakeGameWorld = {
     val vectorAction: Vector[FoodAction] = snake.move(direction)
     val queue = new util.ArrayDeque[FoodAction]()
-    queue.addAll(vectorAction.asJava)
+    queue.addAll(vectorAction.asJava) //STATE, keeps track of actions to run
+
+    type Play[A] = State[PlayState, A]
+    val playInterpreter = new Interpreter[Wrap, Play] { //what we want to do is Wrap and hwo we execute is Play
+      override def interpret[A](wrappedA: Wrap[A]): Play[A] = {
+        def help(foodAction: FoodAction): Play[Unit] = {
+          foodAction match {
+            case GrowSnake => State.modify[PlayState](playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
+            case AddFood => State.modify[PlayState](_.copy(food = FoodAbsent(turns = moveNumber + 10)))
+            case FoodReady => State.modify[PlayState](playState => playState.copy(food = foodGenerator.apply(moveNumber, playState.snake, board)))
+            case MovedSnake(newSnake) => for {
+              oldActions <- State.inspect[PlayState, Vector[FoodAction]](_.actions)
+              newActions = food.eat(newSnake.location.head, moveNumber)
+              playing <- State.modify[PlayState](playState => playState.copy(playing = isPlayingCurrently(newSnake), snake = newSnake, actions = oldActions ++ newActions))
+            } yield ()
+          } //TODO: start here
+        }
+        wrappedA match {
+          case FoodActionWrapper(foodAction) => help(foodAction)
+          case FoodActionWrapper2(wrapOfA, f) => interpret(wrapOfA).map(f)
+        }
+      }
+    }
 
     var stillPlaying = isPlaying
     var updatedFood = food
@@ -19,7 +45,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
 
     while(!queue.isEmpty) {
       val action = queue.removeFirst()
-        val (p, f, s) = (stillPlaying, updatedFood, updatedSnake)
+        val (p, f, s) = (stillPlaying, updatedFood, updatedSnake) //STATE
       if (p) {
         val (newP, newF, newS, newA) = action match {
             case AddFood => (p, FoodAbsent(turns = moveNumber + 10), s, Vector.empty)

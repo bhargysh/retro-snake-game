@@ -25,8 +25,14 @@ object Script {
       case Bind(y) => Bind(y.map((sf: Script[F, A]) => flatMap(sf)(f))) // F[Script[F, B]] => Script[F, B]
       case Pure(x) => f(x)
     }
-//TODO: this
-    override def tailRecM[A, B](a: A)(f: A => Script[F, Either[A, B]]): Script[F,B] = ???
+
+    override def tailRecM[A, B](a: A)(f: A => Script[F, Either[A, B]]): Script[F, B] = {
+      def continue(either: Either[A, B]): Script[F, B] = either.fold(keepRecurring => tailRecM(keepRecurring)(f), value => Pure(value))
+      f(a) match {
+        case Pure(x) => continue(x)
+        case Bind(y) => Bind(y.map { script => flatMap(script)(continue) })
+      }
+    } // other functions like traverse will use this
   }
 }
 
@@ -50,6 +56,7 @@ object Interpreter {
         }
       }
     }
+
     println(FoodAction.evaluate(script, interpreter))
     println("❄❄❄❄❄❄❄❄❄❄❄❄❄❄️")
     println(FoodAction.evaluate(bindScript, interpreter))
@@ -65,10 +72,11 @@ object FoodAction {
   def liftF[F[_]: Functor, A](fOfA: F[A]): Script[F, A] = Bind(fOfA.map((x: A) => Pure(x)))
 }
 
+//TODO: revisit this
 sealed trait Wrap[T]
 
 case class FoodActionWrapper(foodAction: FoodAction) extends Wrap[Unit]
-case class FoodActionWrapper2[A, B](wrapOfA: Wrap[A], f: A => B) extends Wrap[B] // needs to be able to produce any type, consequence of being a functor as map has to work for any types A and B
+case class FoodActionWrapper2[A, B](wrapOfA: Wrap[A], f: A => B) extends Wrap[B] // to make it a functor it needs to be able to produce any type, consequence of being a functor as map has to work for any types A and B
 
 object Wrap {
   implicit def functorWrap: Functor[Wrap] = new Functor[Wrap] {
