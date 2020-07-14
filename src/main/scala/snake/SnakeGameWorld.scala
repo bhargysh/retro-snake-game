@@ -1,10 +1,7 @@
 package snake
 
-import java.util
-
 import cats.data.State
 
-import scala.collection.JavaConverters._
 import scala.util.Random
 
 case class PlayState(actions: Vector[FoodAction], playing: Boolean, food: Food, snake: Snake)
@@ -13,9 +10,6 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
-    val vectorAction: Vector[FoodAction] = snake.move(direction)
-    val queue = new util.ArrayDeque[FoodAction]()
-    queue.addAll(vectorAction.asJava) //STATE, keeps track of actions to run
 
     type Play[A] = State[PlayState, A]
     val playInterpreter = new Interpreter[Wrap, Play] { //what we want to do is Wrap and hwo we execute is Play
@@ -30,7 +24,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
               newActions = food.eat(newSnake.location.head, moveNumber)
               playing <- State.modify[PlayState](playState => playState.copy(playing = isPlayingCurrently(newSnake), snake = newSnake, actions = oldActions ++ newActions))
             } yield ()
-          } //TODO: start here
+          }
         }
         wrappedA match {
           case FoodActionWrapper(foodAction) => help(foodAction)
@@ -38,42 +32,36 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
         }
       }
     }
+    val vectorAction: Vector[FoodAction] = snake.move(direction)
+    val initialPlayState = PlayState(vectorAction, isPlaying, food, snake)
 
-    var stillPlaying = isPlaying
-    var updatedFood = food
-    var updatedSnake = snake
+    def popAction(): Play[Option[FoodAction]] = for {
+      oldActions <- State.inspect[PlayState, Vector[FoodAction]](_.actions)
+      x <- oldActions match {
+        case head+:tail => State.modify[PlayState](playState => playState.copy(actions = tail)).map(_ => Some(head))
+        case _ => State.pure[PlayState, Option[FoodAction]](None) //empty vector of food action
+      }
+    } yield x
 
-    while(!queue.isEmpty) {
-      val action = queue.removeFirst()
-        val (p, f, s) = (stillPlaying, updatedFood, updatedSnake) //STATE
-      if (p) {
-        val (newP, newF, newS, newA) = action match {
-            case AddFood => (p, FoodAbsent(turns = moveNumber + 10), s, Vector.empty)
-            case FoodReady => (p, foodGenerator.apply(moveNumber, snake, board), s, Vector.empty)
-            case GrowSnake => (p, f, s.copy(length = s.length + 1), Vector.empty)
-            case MovedSnake(updatedSnake) => (isPlayingCurrently(updatedSnake), f, updatedSnake, food.eat(updatedSnake.location.head, moveNumber))
-          }
-        stillPlaying = newP
-        updatedFood = newF
-        updatedSnake = newS
-        queue.addAll(newA.asJava)
+    def go(): Play[Unit] = {
+      popAction().flatMap {
+        case None => State.pure[PlayState, Unit](())
+        case Some(foodAction) =>
+          playInterpreter.interpret(FoodActionWrapper(foodAction)).flatMap(_ => go())
       }
     }
 
+    val (evaluatedState, _) = go().run(initialPlayState).value
+    SnakeGameWorld(evaluatedState.snake, board, evaluatedState.food, evaluatedState.playing, moveNumber + 1)
 
-    this.copy(
-      snake = updatedSnake,
-      isPlaying = stillPlaying,
-      moveNumber = moveNumber + 1,
-      food = updatedFood)
+    // TODO: try to run the program without the interpreter
+    // TODO: test the play function
   }
 
   def isPlayingCurrently(snake: Snake): Boolean = {
     val snakeHead = snake.location.head
     !board.isWall(snakeHead)
   }
-
-  //TODO: think about play method, logic is a bit hidden
 }
 
 
@@ -115,13 +103,13 @@ case class Board(cell: Array[Cell], width: Int, height: Int) {
   def cellAt(location: Location): Cell = {
     cell(cellIndex(location.x, location.y))
   }
-  def cellIndex(x: Int, y: Int) = {
+  def cellIndex(x: Int, y: Int): Int = {
     x + y * width
   }
   def locations: Set[Location] = {
     Range(0, height).flatMap { y =>
       Range(0, width).map { x =>
-          (Location(x, y))
+          Location(x, y)
       }
     }.toSet
   }
@@ -187,14 +175,14 @@ object SnakeGameWorld {
       EmptyCell
     }
   }
-  val board = Board(emptyCells, 10, 10)
+  val board: Board = Board(emptyCells, 10, 10)
 
   private val snake = Snake(List(Location(5, 5), Location(5,4)), 4, Up)
 
   val food: Food = FoodPresent(Location(2,3), 20)
   val isPlaying: Boolean = true
 
-  def newSnakeGameWorld = {
+  def newSnakeGameWorld: SnakeGameWorld = {
     new SnakeGameWorld(snake, board, food, isPlaying, moveNumber = 0)
   }
 }
