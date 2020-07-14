@@ -41,28 +41,6 @@ trait Interpreter[F[_], G[_]] { // F might be FoodAction and G might be IO, need
   def interpret[A](fOfA: F[A]): G[A] // natural transformation => like map but on the outside not the inside
 }
 
-object Interpreter {
-  def main(args: Array[String]): Unit = {
-    type SF[A] = Script[Wrap, A]
-    implicit val monadWTF: Monad[SF] = Script.monadScript
-    val script: Pure[Wrap, String] = Pure("🌈") // Pure[F,A]
-    val bindScript = monadWTF.flatMap(FoodAction.liftF(FoodActionWrapper(GrowSnake)))(_ => monadWTF.map(script)(s => s))
-
-    val interpreter = new Interpreter[Wrap, Id] {
-      override def interpret[A](wrappedFoodAction: Wrap[A]): Id[A] = {
-        wrappedFoodAction match {
-          case FoodActionWrapper(foodAction) => println(foodAction)
-          case FoodActionWrapper2(wrapSomething, func) => func(interpret(wrapSomething))
-        }
-      }
-    }
-
-    println(FoodAction.evaluate(script, interpreter))
-    println("❄❄❄❄❄❄❄❄❄❄❄❄❄❄️")
-    println(FoodAction.evaluate(bindScript, interpreter))
-  }
-}
-
 object FoodAction {
   def evaluate[A, F[_], G[_]: Monad](a: Script[F, A], interpreter: Interpreter[F, G]): G[A] = a match {
     case Pure(a) => Applicative[G].pure(a)
