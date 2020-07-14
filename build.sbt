@@ -16,8 +16,8 @@ useYarn := true
 val specs2Version = "4.9.2"
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % "1.6.1",
-  "org.typelevel" %% "cats-effect" % "1.4.0",
+  "org.typelevel" %%% "cats-core" % "2.1.1",
+  "org.typelevel" %%% "cats-effect" % "2.1.4",
   "org.specs2"   %%% "specs2-core" % specs2Version % Test,
   "org.specs2"   %%% "specs2-scalacheck" % specs2Version % Test,
   "com.lihaoyi"  %%% "utest" % "0.7.4" % Test,
@@ -27,3 +27,5 @@ libraryDependencies ++= Seq(
 requireJsDomEnv in Test := true
 
 testFrameworks := Seq(TestFrameworks.Specs2)
+
+scalacOptions --= Seq("-Ywarn-value-discard")
