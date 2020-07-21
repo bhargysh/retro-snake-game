@@ -28,8 +28,11 @@ class FoodGeneratorSpec extends Specification with ScalaCheck {
     direction <- arbitrary[Direction]
     } yield Snake(location, length, direction)
   )
+  implicit val moveNumberArb: Arbitrary[MoveNumber] = Arbitrary(
+    arbitrary[Int].map(number => MoveNumber(number))
+  )
   "Food generator" should {
-    "generate food that is not on the snake or wall" >> prop { (moveNumber:Int, snake: Snake) =>
+    "generate food that is not on the snake or wall" >> prop { (moveNumber: MoveNumber, snake: Snake) =>
       val food = new FoodGenerator(new Random())
       val result: Food = food(moveNumber, snake, SnakeGameWorld.board) //empty board as it does not change
       result should beLike[Food]{ case FoodPresent(location, expiryTime) =>

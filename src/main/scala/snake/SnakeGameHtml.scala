@@ -71,7 +71,7 @@ class SnakeGameHtml(document: Document) {
     case FoodCell => "🍕"
   }
 
-  private def foodVisible(expiryTime: Int, moveNumber: Int): Boolean = {
+  private def foodVisible(expiryTime: MoveNumber, moveNumber: MoveNumber): Boolean = {
     val blinkTime = expiryTime - moveNumber
     if (blinkTime > 4) true
     else blinkTime % 2 == 0

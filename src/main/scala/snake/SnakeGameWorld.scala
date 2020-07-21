@@ -6,12 +6,21 @@ import scala.util.Random
 
 case class PlayState(actions: Vector[FoodAction], playing: Boolean, food: Food, snake: Snake)
 
-case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: Int) {
+case class MoveNumber(number: Int) {
+  def +(increment: Int): MoveNumber = MoveNumber(number + increment)
+  def -(other: MoveNumber): Int = number - other.number
+}
+// TODO: use the reader
+
+object MoveNumber {
+  implicit val orderingMoveNumber: Ordering[MoveNumber] = Ordering[Int].on((n: MoveNumber) => n.number)
+}
+
+case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: MoveNumber) {
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
-
-    type Play[A] = State[PlayState, A]
+    type Play[A] = State[PlayState, A] //State[(PlayState, movenumber), A]
     val playInterpreter = new Interpreter[Wrap, Play] { //what we want to do is Wrap and hwo we execute is Play
       override def interpret[A](wrappedA: Wrap[A]): Play[A] = {
         def help(foodAction: FoodAction): Play[Unit] = {
@@ -125,10 +134,10 @@ case object EmptyCell extends Cell
 case object FoodCell extends Cell
 
 sealed trait Food {
-  def eat(snakeHead: Location, moveNumber: Int): Vector[FoodAction]
+  def eat(snakeHead: Location, moveNumber: MoveNumber): Vector[FoodAction]
 }
-case class FoodPresent(location: Location, expiryTime: Int) extends Food {
-  override def eat(snakeHead: Location, moveNumber: Int): Vector[FoodAction] = {
+case class FoodPresent(location: Location, expiryTime: MoveNumber) extends Food {
+  override def eat(snakeHead: Location, moveNumber: MoveNumber): Vector[FoodAction] = {
     if (location == snakeHead) {
       Vector(AddFood, GrowSnake)
     } else if (moveNumber == expiryTime) {
@@ -138,8 +147,8 @@ case class FoodPresent(location: Location, expiryTime: Int) extends Food {
     }
   }
 }
-case class FoodAbsent(turns: Int) extends Food {
-  override def eat(snakeHead: Location, moveNumber: Int): Vector[FoodAction] = {
+case class FoodAbsent(turns: MoveNumber) extends Food {
+  override def eat(snakeHead: Location, moveNumber: MoveNumber): Vector[FoodAction] = {
     if(turns == moveNumber) { //TODO: revisit this logic, similar to FoodPresent eat()
       Vector(FoodReady)
     } else {
@@ -179,10 +188,10 @@ object SnakeGameWorld {
 
   private val snake = Snake(List(Location(5, 5), Location(5,4)), 4, Up)
 
-  val food: Food = FoodPresent(Location(2,3), 20)
+  val food: Food = FoodPresent(Location(2,3), MoveNumber(20))
   val isPlaying: Boolean = true
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    new SnakeGameWorld(snake, board, food, isPlaying, moveNumber = 0)
+    new SnakeGameWorld(snake, board, food, isPlaying, MoveNumber(0))
   }
 }
