@@ -20,7 +20,17 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
-    type Play[A] = State[PlayState, A] //State[(PlayState, movenumber), A]
+    type Play[A] = State[PlayState, A]
+
+    def halp[A](state: State[PlayState, A]): State[(PlayState, MoveNumber), A] =
+    for {
+      run <- State.apply[(PlayState, MoveNumber), A] {
+        case (playState, moveNumber) => state.run(playState).value match {
+          case (playState, a) => ((playState, moveNumber), a)
+        }
+      }
+    } yield run
+
     val playInterpreter = new Interpreter[Wrap, Play] { //what we want to do is Wrap and hwo we execute is Play
       override def interpret[A](wrappedA: Wrap[A]): Play[A] = {
         def help(foodAction: FoodAction): Play[Unit] = {
@@ -42,7 +52,6 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
       }
     }
     val vectorAction: Vector[FoodAction] = snake.move(direction)
-    val initialPlayState = PlayState(vectorAction, isPlaying, food, snake)
 
     def popAction(): Play[Option[FoodAction]] = for {
       oldActions <- State.inspect[PlayState, Vector[FoodAction]](_.actions)
@@ -60,8 +69,9 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
       }
     }
 
-    val (evaluatedState, _) = go().run(initialPlayState).value
-    SnakeGameWorld(evaluatedState.snake, board, evaluatedState.food, evaluatedState.playing, moveNumber + 1)
+    val initialPlayState = (PlayState(vectorAction, isPlaying, food, snake), moveNumber)
+    val ((playState, move), ()) = halp(go()).run(initialPlayState).value
+    SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
 
     // TODO: try to run the program without the interpreter
     // TODO: test the play function
