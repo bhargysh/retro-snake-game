@@ -3,3 +3,6 @@
 /.idea/
 /project/project/
 .java-version
+
+# dependencies
+/node_modules
