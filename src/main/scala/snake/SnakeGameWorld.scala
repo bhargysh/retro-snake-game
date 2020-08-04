@@ -1,6 +1,6 @@
 package snake
 
-import cats.data.State
+import cats.data.{ReaderT, State}
 import cats.implicits._
 
 import scala.util.Random
@@ -11,7 +11,7 @@ case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
   def -(other: MoveNumber): Int = number - other.number
 }
-// TODO: use the reader
+// TODO: *really* use the reader
 
 object MoveNumber {
   implicit val orderingMoveNumber: Ordering[MoveNumber] = Ordering[Int].on((n: MoveNumber) => n.number)
@@ -21,19 +21,31 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
   private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
-    type Play[A] = State[PlayState, A]
+    type Play[A] = ReaderT[P, Board, A]
+    type P[A] = State[PlayState, A]
+
+    def modifyState(f: PlayState => PlayState): Play[Unit] = {
+      ReaderT.liftF[P, Board, Unit](State.modify[PlayState](f))
+//          F[_] -> underlying monad
+//          A -> extram params it needs
+//          B -> return type
+    }
+
+    def inspectState[S](f: PlayState => S): Play[S] = {
+      ReaderT.liftF[P, Board, S](State.inspect(f))
+    }
 
     val playInterpreter = new Interpreter[Wrap, Play] { //what we want to do is Wrap and hwo we execute is Play
       override def interpret[A](wrappedA: Wrap[A]): Play[A] = {
         def help(foodAction: FoodAction): Play[Unit] = {
           foodAction match {
-            case GrowSnake => State.modify[PlayState](playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
-            case AddFood => State.modify[PlayState](_.copy(food = FoodAbsent(turns = moveNumber + 10)))
-            case FoodReady => State.modify[PlayState](playState => playState.copy(food = foodGenerator.apply(moveNumber, playState.snake, board)))
+            case GrowSnake => modifyState(playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
+            case AddFood => modifyState(_.copy(food = FoodAbsent(turns = moveNumber + 10)))
+            case FoodReady => modifyState(playState => playState.copy(food = foodGenerator.apply(moveNumber, playState.snake, board)))
             case MovedSnake(newSnake) => for {
-              oldActions <- State.inspect[PlayState, Vector[FoodAction]](_.actions)
+              oldActions <- inspectState(_.actions)
               newActions = food.eat(newSnake.location.head, moveNumber)
-              playing <- State.modify[PlayState](playState => playState.copy(playing = isPlayingCurrently(newSnake), snake = newSnake, actions = oldActions ++ newActions))
+              playing <- modifyState(playState => playState.copy(playing = isPlayingCurrently(newSnake), snake = newSnake, actions = oldActions ++ newActions))
             } yield ()
           }
         }
@@ -46,16 +58,16 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
     val vectorAction: Vector[FoodAction] = snake.move(direction)
 
     def popAction(): Play[Option[FoodAction]] = for {
-      oldActions <- State.inspect[PlayState, Vector[FoodAction]](_.actions)
+      oldActions <- inspectState(_.actions)
       x <- oldActions match {
-        case head+:tail => State.modify[PlayState](playState => playState.copy(actions = tail)).map(_ => Some(head))
-        case _ => State.pure[PlayState, Option[FoodAction]](None) //empty vector of food action
+        case head+:tail => modifyState(playState => playState.copy(actions = tail)).map(_ => Some(head))
+        case _ => ReaderT.pure[P, Board, Option[FoodAction]](None) //empty vector of food action
       }
     } yield x
 
     def go(): Play[Unit] = {
       popAction().flatMap {
-        case None => State.pure[PlayState, Unit](())
+        case None => ReaderT.pure[P, Board, Unit](())
         case Some(foodAction) =>
           playInterpreter.interpret(FoodActionWrapper(foodAction)).flatMap(_ => go())
       }
@@ -68,7 +80,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
     }
 
     val updateGameState =
-      go().transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
+      go().run(board).transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
     val ((playState, move), ()) = updateGameState.run(initialPlayState).value
     SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
 
