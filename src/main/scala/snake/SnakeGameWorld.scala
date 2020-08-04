@@ -1,6 +1,7 @@
 package snake
 
 import cats.data.State
+import cats.implicits._
 
 import scala.util.Random
 
@@ -21,15 +22,6 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
     type Play[A] = State[PlayState, A]
-
-    def halp[A](state: State[PlayState, A]): State[(PlayState, MoveNumber), A] =
-    for {
-      run <- State.apply[(PlayState, MoveNumber), A] {
-        case (playState, moveNumber) => state.run(playState).value match {
-          case (playState, a) => ((playState, moveNumber), a)
-        }
-      }
-    } yield run
 
     val playInterpreter = new Interpreter[Wrap, Play] { //what we want to do is Wrap and hwo we execute is Play
       override def interpret[A](wrappedA: Wrap[A]): Play[A] = {
@@ -70,7 +62,14 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
     }
 
     val initialPlayState = (PlayState(vectorAction, isPlaying, food, snake), moveNumber)
-    val ((playState, move), ()) = halp(go()).run(initialPlayState).value
+
+    def toNewGlobalState(oldGlobalState: (PlayState, MoveNumber), finalLocalState: PlayState): (PlayState, MoveNumber) = {
+      (finalLocalState, oldGlobalState._2)
+    }
+
+    val updateGameState =
+      go().transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
+    val ((playState, move), ()) = updateGameState.run(initialPlayState).value
     SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
 
     // TODO: try to run the program without the interpreter
