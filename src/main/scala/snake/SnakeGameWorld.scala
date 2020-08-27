@@ -26,9 +26,9 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
 
     def go(foodActions: Vector[FoodAction]): Play[Unit] = {
       foodActions match {
-        case Vector() => ReaderT.pure[P, Board, Unit](())
+        case Vector() => ReaderT.pure[P, E, Unit](())
         case foodAction +: oldActions => for {
-          newActions <- execute(foodAction, moveNumber, food)
+          newActions <- execute(foodAction, food)
           _ <- go(oldActions ++ newActions)
         } yield ()
       }
@@ -41,7 +41,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
     }
 
     val updateGameState =
-      go(vectorAction).run(board).transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
+      go(vectorAction).run((board, moveNumber)).transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
 
     val ((playState, move), ()) = updateGameState.run(initialPlayState).value
     SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
