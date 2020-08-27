@@ -1,7 +1,6 @@
 package snake
 
-import cats.{Applicative, Functor, Id, Monad}
-import cats.implicits._
+import cats.data.{ReaderT, State}
 
 sealed trait FoodAction
 
@@ -10,61 +9,42 @@ case object AddFood extends FoodAction
 case object FoodReady extends FoodAction
 case class MovedSnake(newSnake: Snake) extends FoodAction
 
-sealed trait Script[F[_], A]
-
-case class Pure[F[_], A](a: A) extends Script[F, A]
-case class Bind[F[_], A](a: F[Script[F, A]]) extends Script[F, A]
-
-object Script {
-//  type SF[F[_]] = ({ type L[A] = Script[F, A] })#L //script takes [_,_] and monad takes [_]
-
-  implicit def monadScript[F[_]: Functor]: Monad[({ type f[x] = Script[F, x] })#f] = new Monad[({ type f[x] = Script[F, x] })#f] {
-    override def pure[A](x: A): Script[F,A] = Pure(x)
-
-    override def flatMap[A, B](fa: Script[F,A])(f: A => Script[F,B]): Script[F,B] = fa match {
-      case Bind(y) => Bind(y.map((sf: Script[F, A]) => flatMap(sf)(f))) // F[Script[F, B]] => Script[F, B]
-      case Pure(x) => f(x)
-    }
-
-    override def tailRecM[A, B](a: A)(f: A => Script[F, Either[A, B]]): Script[F, B] = {
-      def continue(either: Either[A, B]): Script[F, B] = either.fold(keepRecurring => tailRecM(keepRecurring)(f), value => Pure(value))
-      f(a) match {
-        case Pure(x) => continue(x)
-        case Bind(y) => Bind(y.map { script => flatMap(script)(continue) })
-      }
-    } // other functions like traverse will use this
-  }
-}
-
-
-trait Interpreter[F[_], G[_]] { // F might be FoodAction and G might be IO, needs to interpret F in terms of G
-  def interpret[A](fOfA: F[A]): G[A] // natural transformation => like map but on the outside not the inside
-}
-
 object FoodAction {
-  def evaluate[A, F[_], G[_]: Monad](a: Script[F, A], interpreter: Interpreter[F, G]): G[A] = a match {
-    case Pure(a) => Applicative[G].pure(a)
-    case Bind(x) => interpreter.interpret(x).flatMap((a: Script[F, A]) => evaluate(a, interpreter))
+  type Play[A] = ReaderT[P, Board, A]
+  type P[A] = State[PlayState, A] //ReaderT[State[PlayState, A], Board, A] where A -> Unit
+
+  def modifyState(f: PlayState => PlayState): Play[Unit] = {
+    ReaderT.liftF[P, Board, Unit](State.modify[PlayState](f))
+    //          F[_] -> underlying monad
+    //          A -> extram params it needs
+    //          B -> return type
   }
 
-  def liftF[F[_]: Functor, A](fOfA: F[A]): Script[F, A] = Bind(fOfA.map((x: A) => Pure(x)))
-}
+  def inspectState[S](f: PlayState => S): Play[S] = {
+    ReaderT.liftF[P, Board, S](State.inspect(f))
+  }
 
-//TODO: revisit this
-sealed trait Wrap[T]
+  def isPlayingCurrently(snake: Snake): Play[Boolean] = for {
+      board <- ReaderT.ask[P, Board]
+    } yield !board.isWall(snake.location.head)
 
-case class FoodActionWrapper(foodAction: FoodAction) extends Wrap[Unit]
-case class FoodActionWrapper2[A, B](wrapOfA: Wrap[A], f: A => B) extends Wrap[B] // to make it a functor it needs to be able to produce any type, consequence of being a functor as map has to work for any types A and B
-
-object Wrap {
-  implicit def functorWrap: Functor[Wrap] = new Functor[Wrap] {
-    override def map[A, B](fa: Wrap[A])(f: A => B): Wrap[B] = {
-      fa match {
-        case FoodActionWrapper(_) => FoodActionWrapper2(fa, f)
-        case FoodActionWrapper2(wrapX, xToA) => FoodActionWrapper2(wrapX, f.compose(xToA))
-      }
+  def execute(foodAction: FoodAction, moveNumber: MoveNumber, food: Food): Play[Vector[FoodAction]] = {
+    foodAction match {
+      case GrowSnake => for {
+      x <- modifyState(playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
+      } yield Vector.empty[FoodAction]
+      case AddFood => for {
+      _ <- modifyState(_.copy(food = FoodAbsent(turns = moveNumber + 10)))
+      } yield Vector.empty[FoodAction]
+      case FoodReady => for {
+        board <- ReaderT.ask[P, Board]
+        _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board)))
+      } yield Vector.empty[FoodAction]
+      case MovedSnake(newSnake) => for {
+        playing <- isPlayingCurrently(newSnake)
+        newActions = food.eat(newSnake.location.head, moveNumber)
+        _ <- modifyState(playState => playState.copy(playing = playing, snake = newSnake))
+      } yield newActions
     }
   }
 }
-
-//Why Script? Script is separate from FoodAction, it doesn't know anything about snake game logic
