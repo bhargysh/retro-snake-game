@@ -1,13 +1,43 @@
 package snake
 
 import cats.data.{ReaderT, State}
+import snake.FoodAction._
 
-sealed trait FoodAction
+sealed trait FoodAction {
+  def execute: Play[Vector[FoodAction]]
+}
 
-case object GrowSnake extends FoodAction
-case object AddFood extends FoodAction
-case object FoodReady extends FoodAction
-case class MovedSnake(newSnake: Snake) extends FoodAction
+case object GrowSnake extends FoodAction {
+  def execute: Play[Vector[FoodAction]] = for {
+    _ <- modifyState(playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
+  } yield Vector.empty[FoodAction]
+}
+case object AddFood extends FoodAction {
+  def execute: Play[Vector[FoodAction]] = for {
+    moveNumber <- askForMoveNumber
+    _ <- modifyState(_.copy(food = FoodAbsent(turns = moveNumber + 10)))
+  } yield Vector.empty[FoodAction]
+}
+case object FoodReady extends FoodAction {
+  def execute: Play[Vector[FoodAction]] = for {
+    board <- askForBoard
+    moveNumber <- askForMoveNumber
+    _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board)))
+  } yield Vector.empty[FoodAction]
+}
+case class MovedSnake(newSnake: Snake) extends FoodAction {
+  private def isPlayingCurrently(snake: Snake): Play[Boolean] = for {
+    board <- askForBoard
+  } yield !board.isWall(snake.location.head)
+
+  def execute: Play[Vector[FoodAction]] = for {
+    playing <- isPlayingCurrently(newSnake)
+    moveNumber <- askForMoveNumber
+    food <- inspectState(_.food)
+    newActions = food.eat(newSnake.location.head, moveNumber)
+    _ <- modifyState(playState => playState.copy(playing = playing, snake = newSnake))
+  } yield newActions
+}
 
 object FoodAction {
   type E = (Board, MoveNumber)
@@ -35,33 +65,5 @@ object FoodAction {
     (_, moveNumber) = x
   } yield moveNumber
 
-  def isPlayingCurrently(snake: Snake): Play[Boolean] = for {
-      board <- askForBoard
-    } yield !board.isWall(snake.location.head)
-
-//  TODO: read the food, replace with FoodReady?
-//  TODO: get rid of food parameter
-
-  def execute(foodAction: FoodAction, food: Food): Play[Vector[FoodAction]] = {
-    foodAction match {
-      case GrowSnake => for {
-      x <- modifyState(playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
-      } yield Vector.empty[FoodAction]
-      case AddFood => for {
-      moveNumber <- askForMoveNumber
-      _ <- modifyState(_.copy(food = FoodAbsent(turns = moveNumber + 10)))
-      } yield Vector.empty[FoodAction]
-      case FoodReady => for {
-        board <- askForBoard
-        moveNumber <- askForMoveNumber
-        _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board)))
-      } yield Vector.empty[FoodAction]
-      case MovedSnake(newSnake) => for {
-        playing <- isPlayingCurrently(newSnake)
-        moveNumber <- askForMoveNumber
-        newActions = food.eat(newSnake.location.head, moveNumber)
-        _ <- modifyState(playState => playState.copy(playing = playing, snake = newSnake))
-      } yield newActions
-    }
-  }
+//TODO: more tests for each food action, PBT?
 }

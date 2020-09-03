@@ -28,7 +28,7 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
       foodActions match {
         case Vector() => ReaderT.pure[P, E, Unit](())
         case foodAction +: oldActions => for {
-          newActions <- execute(foodAction, food)
+          newActions <- foodAction.execute
           _ <- go(oldActions ++ newActions)
         } yield ()
       }
