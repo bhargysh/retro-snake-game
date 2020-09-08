@@ -17,7 +17,7 @@ object MoveNumber {
 }
 
 case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: MoveNumber) {
-  private val foodGenerator: FoodGenerator = new FoodGenerator(new Random())
+  private val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
     import FoodAction._

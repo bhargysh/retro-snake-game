@@ -8,7 +8,7 @@ import org.specs2.mutable.Specification
 import scala.util.Random
 import Generators._
 
-class FoodGeneratorSpec extends Specification with ScalaCheck {
+class RandomFoodGeneratorSpec extends Specification with ScalaCheck {
   implicit val shrinkSnake: Shrink[Snake] = Shrink { case Snake(location, length, direction) =>
     if (length < 3) {
       Stream.empty[Snake]
@@ -31,9 +31,9 @@ class FoodGeneratorSpec extends Specification with ScalaCheck {
   implicit val moveNumberArb: Arbitrary[MoveNumber] = Arbitrary(
     arbitrary[Int].map(number => MoveNumber(number))
   )
-  "Food generator" should {
+  "Random food generator" should {
     "generate food that is not on the snake or wall" >> prop { (moveNumber: MoveNumber, snake: Snake) =>
-      val food = new FoodGenerator(new Random())
+      val food = new RandomFoodGenerator(new Random())
       val result: Food = food(moveNumber, snake, SnakeGameWorld.board) //empty board as it does not change
       result should beLike[Food]{ case FoodPresent(location, expiryTime) =>
         expiryTime should beBetween(moveNumber + 5, moveNumber + 10).excludingEnd

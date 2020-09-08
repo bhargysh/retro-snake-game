@@ -2,9 +2,13 @@ package snake
 
 import scala.util.Random
 
-class FoodGenerator(randomNumberGenerator: Random) {
+trait FoodGenerator {
+  def apply(moveNumber: MoveNumber, snake: Snake, board: Board): FoodPresent
+}
 
-  def apply(moveNumber: MoveNumber, snake: Snake, board: Board): Food = {
+class RandomFoodGenerator(randomNumberGenerator: Random) extends FoodGenerator {
+
+  def apply(moveNumber: MoveNumber, snake: Snake, board: Board): FoodPresent = {
     val notAvailable: Set[Location] = snake.location.toSet
     val emptyLocations: Set[Location] = board.locations.filter { location =>
       board.cellAt(location) == EmptyCell
