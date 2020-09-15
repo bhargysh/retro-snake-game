@@ -64,6 +64,4 @@ object FoodAction {
     x <- ReaderT.ask[P, E]
     (_, moveNumber) = x
   } yield moveNumber
-
-//TODO: more tests for each food action, PBT?
 }

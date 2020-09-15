@@ -24,24 +24,16 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
 
     val vectorAction: Vector[FoodAction] = snake.move(direction)
 
-    def go(foodActions: Vector[FoodAction]): Play[Unit] = {
-      foodActions match {
-        case Vector() => ReaderT.pure[P, E, Unit](())
-        case foodAction +: oldActions => for {
-          newActions <- foodAction.execute
-          _ <- go(oldActions ++ newActions)
-        } yield ()
-      }
-    }
-
     val initialPlayState = (PlayState(isPlaying, food, snake, foodGenerator), moveNumber)
 
     def toNewGlobalState(oldGlobalState: (PlayState, MoveNumber), finalLocalState: PlayState): (PlayState, MoveNumber) = {
       (finalLocalState, oldGlobalState._2)
     }
 
+    val actionRunner = new ActionRunner[FoodAction, Play](_.execute)
+
     val updateGameState =
-      go(vectorAction).run((board, moveNumber)).transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
+      actionRunner.go(vectorAction).run((board, moveNumber)).transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
 
     val ((playState, move), ()) = updateGameState.run(initialPlayState).value
     SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
