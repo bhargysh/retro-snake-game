@@ -23,12 +23,11 @@ case class Snake(location: List[Location], length: Int, direction: Direction) {
     case Left | Right => newDirection == Up || newDirection == Down
   }
 
-  def move(direction: Option[Direction]): Vector[FoodAction] = {
+  def move(direction: Option[Direction]): Snake = {
     val turnedSnake = direction match {
       case Some(newDirection) => turn(newDirection)
       case _ => this
     }
-    val movedSnake: Snake = turnedSnake.forward()
-    Vector(MovedSnake(movedSnake))
+    turnedSnake.forward()
   }
 }

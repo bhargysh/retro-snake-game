@@ -1,6 +1,6 @@
 package snake
 
-import cats.data.ReaderT
+import cats.data.State
 import cats.implicits._
 
 import scala.util.Random
@@ -22,8 +22,6 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
   def play(direction: Option[Direction]): SnakeGameWorld = {
     import FoodAction._
 
-    val vectorAction: Vector[FoodAction] = snake.move(direction)
-
     val initialPlayState = (PlayState(isPlaying, food, snake, foodGenerator), moveNumber)
 
     def toNewGlobalState(oldGlobalState: (PlayState, MoveNumber), finalLocalState: PlayState): (PlayState, MoveNumber) = {
@@ -32,14 +30,24 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
 
     val actionRunner = new ActionRunner[FoodAction, Play](_.execute)
 
-    val updateGameState =
-      actionRunner.go(vectorAction).run((board, moveNumber)).transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState)
+    val movedSnake: Snake = snake.move(direction)
 
-    val ((playState, move), ()) = updateGameState.run(initialPlayState).value
+    val updateGameState: State[(PlayState, MoveNumber), Unit] =
+      actionRunner
+        .go(Vector(MovedSnake(movedSnake)))
+        .run((board, moveNumber))
+        .transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState) //TODO: can we make this nicer?
+
+    val ((playState, move), ()) =
+      updateGameState
+        .run(initialPlayState)
+        .value
+
     SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
 
 
     // TODO: test the play function
+//    TODO: why can't we use action runner to run everything?!
   }
 
 
