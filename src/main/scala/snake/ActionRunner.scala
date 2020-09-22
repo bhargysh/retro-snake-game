@@ -2,18 +2,18 @@ package snake
 
 import cats.Monad
 import cats.implicits._
+import scala.util.{Right => EitherRight}
+import scala.util.{Left => EitherLeft}
 
 class ActionRunner[A, M[_]](f: A => M[Vector[A]])(implicit M: Monad[M]) {
 
   def go(actions: Vector[A]): M[Unit] = {
-    actions match {
-      case Vector() => M.pure(())
+    M.tailRecM(actions) {
+      case Vector() => M.pure(EitherRight(()))
       case action +: oldActions => for {
         newActions <- f(action)
-        _ <- go(oldActions ++ newActions)
-      } yield ()
+      } yield EitherLeft(oldActions ++ newActions)
     }
   }
-//  TODO: get rid of recursion
 
 }
