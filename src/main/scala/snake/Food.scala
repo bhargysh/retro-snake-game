@@ -16,7 +16,7 @@ case class FoodPresent(location: Location, expiryTime: MoveNumber) extends Food 
 }
 case class FoodAbsent(turns: MoveNumber) extends Food {
   override def eat(snakeHead: Location, moveNumber: MoveNumber): Vector[FoodAction] = {
-    if(turns == moveNumber) { //TODO: revisit this logic, similar to FoodPresent eat()
+    if(turns == moveNumber) {
       Vector(FoodReady)
     } else {
       Vector.empty

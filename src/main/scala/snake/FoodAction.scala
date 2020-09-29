@@ -39,6 +39,13 @@ case class MovedSnake(newSnake: Snake) extends FoodAction {
   } yield newActions
 }
 
+case class StartTurn(direction: Option[Direction]) extends FoodAction {
+  def execute: Play[Vector[FoodAction]] = for {
+    oldSnake <- inspectState(_.snake)
+    movedSnake = oldSnake.move(direction)
+  } yield Vector(MovedSnake(movedSnake))
+}
+
 object FoodAction {
   type E = (Board, MoveNumber)
   type Play[A] = ReaderT[P, E, A]

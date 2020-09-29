@@ -2,6 +2,7 @@ package snake
 
 import cats.data.State
 import cats.implicits._
+import FoodAction._
 
 import scala.util.Random
 
@@ -16,11 +17,16 @@ object MoveNumber {
   implicit val orderingMoveNumber: Ordering[MoveNumber] = Ordering[Int].on((n: MoveNumber) => n.number)
 }
 
-case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boolean, moveNumber: MoveNumber) {
-  private val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
+case class SnakeGameWorld(snake: Snake,
+                          board: Board,
+                          food: Food,
+                          isPlaying: Boolean,
+                          moveNumber: MoveNumber,
+                          actionRunner: ActionRunner[FoodAction, Play],
+                          foodGenerator: FoodGenerator
+                         ) {
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
-    import FoodAction._
 
     val initialPlayState = (PlayState(isPlaying, food, snake, foodGenerator), moveNumber)
 
@@ -28,13 +34,9 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
       (finalLocalState, oldGlobalState._2)
     }
 
-    val actionRunner = new ActionRunner[FoodAction, Play](_.execute)
-
-    val movedSnake: Snake = snake.move(direction)
-
     val updateGameState: State[(PlayState, MoveNumber), Unit] =
       actionRunner
-        .go(Vector(MovedSnake(movedSnake)))
+        .go(Vector(StartTurn(direction)))
         .run((board, moveNumber))
         .transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState) //TODO: can we make this nicer?
 
@@ -43,11 +45,11 @@ case class SnakeGameWorld(snake: Snake, board: Board, food: Food, isPlaying: Boo
         .run(initialPlayState)
         .value
 
-    SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1)
+    SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1, actionRunner, foodGenerator)
 
 
-    // TODO: test the play function
-//    TODO: why can't we use action runner to run everything?!
+    // TODO: test the play function! do this next time
+//    TODO: why can't we use action runner to run everything / push it to Main when we use IO
   }
 
 
@@ -73,6 +75,9 @@ object SnakeGameWorld {
   val isPlaying: Boolean = true
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    new SnakeGameWorld(snake, board, food, isPlaying, MoveNumber(0))
+    val actionRunner = new ActionRunner[FoodAction, Play](_.execute)
+    val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
+
+    new SnakeGameWorld(snake, board, food, isPlaying, MoveNumber(0), actionRunner, foodGenerator)
   }
 }
