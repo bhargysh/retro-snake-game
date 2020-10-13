@@ -28,27 +28,21 @@ case class SnakeGameWorld(snake: Snake,
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
 
-    val initialPlayState = (PlayState(isPlaying, food, snake, foodGenerator), moveNumber)
+    val initialPlayState = PlayState(isPlaying, food, snake, foodGenerator)
 
-    def toNewGlobalState(oldGlobalState: (PlayState, MoveNumber), finalLocalState: PlayState): (PlayState, MoveNumber) = {
-      (finalLocalState, oldGlobalState._2)
-    }
-
-    val updateGameState: State[(PlayState, MoveNumber), Unit] =
+    val updateGameState: State[PlayState, Unit] =
       actionRunner
         .go(Vector(StartTurn(direction)))
         .run((board, moveNumber))
-        .transformS[(PlayState, MoveNumber)](_._1, toNewGlobalState) //TODO: can we make this nicer?
 
-    val ((playState, move), ()) =
+    val (playState, ()) =
       updateGameState
         .run(initialPlayState)
         .value
 
-    SnakeGameWorld(playState.snake, board, playState.food, playState.playing, move + 1, actionRunner, foodGenerator)
+    SnakeGameWorld(playState.snake, board, playState.food, playState.playing, moveNumber + 1, actionRunner, foodGenerator)
 
 
-    // TODO: test the play function! do this next time
 //    TODO: why can't we use action runner to run everything / push it to Main when we use IO
   }
 

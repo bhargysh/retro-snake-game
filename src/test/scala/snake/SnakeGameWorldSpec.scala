@@ -1,20 +1,23 @@
 package snake
 
 import org.specs2.mutable.Specification
-import FoodAction._
-import cats.implicits._
-import org.specs2.matcher.MatchResult
+import snake.FoodAction._
 
 class SnakeGameWorldSpec extends Specification {
   "play" should {
     "return a new SnakeGameWorld" in {
       val vectorFoodAction = Vector.newBuilder[(PlayState, FoodAction)]
+      val modifiedSnake = Snake(
+        List(Location(2, 1), Location(2, 2)),
+        length = 2,
+        direction = Left
+      )
       val actionRunner: ActionRunner[FoodAction, Play] = new ActionRunner[FoodAction, Play]({foodAction: FoodAction =>
         for {
           state <- FoodAction.inspectState[PlayState](s => s)
+          _ <- FoodAction.modifyState(s => s.copy(playing = false, snake = modifiedSnake))
           _ = vectorFoodAction +=(state -> foodAction)
         } yield Vector.empty[FoodAction]
-//        modify state and observe the modification in updatedSNG
       })
       val snake = Snake(
         List(Location(1, 1), Location(1, 2)),
@@ -38,7 +41,9 @@ class SnakeGameWorldSpec extends Specification {
         foodAction shouldEqual StartTurn(Some(Up))
       }
       vectorFoodAction.result() should contain((expectedPlayState _).tupled)
-      //TODO: test the updatedSNG
+      updatedSNG.isPlaying shouldEqual false
+      updatedSNG.moveNumber shouldEqual MoveNumber(2)
+      updatedSNG.snake shouldEqual modifiedSnake
     }
   }
 }
