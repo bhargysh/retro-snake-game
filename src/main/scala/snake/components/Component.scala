@@ -34,4 +34,26 @@ case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int) extends Comp
   }
 }
 
+case class GameOver(isPlaying: Boolean) extends Component {
+  def render(): Vector[Element] = {
+    if (!isPlaying) {
+      val gameOverTextNode = Element("span", Vector("gameover-span"), None, Vector(TextNode("GAME OVER")))
+      Vector(Element("div", Vector("gameover"), None, Vector(ElementNode(gameOverTextNode))))
+    }
+    else {
+      Vector.empty[Element]
+    }
+  }
+}
+
+case class Board() extends Component {
+  def render(): Vector[Element] = ???
+}
+
+case class SnakeGameContainer(board: Board, gameOver: GameOver) extends Component {
+  def render(): Vector[Element] = {
+    Vector(Element("div", Vector("container"), None, Vector.empty))
+  }
+}
+
 //TODO: create other components as mentioned above
