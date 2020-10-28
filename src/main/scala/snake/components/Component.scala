@@ -46,13 +46,16 @@ case class GameOver(isPlaying: Boolean) extends Component {
   }
 }
 
-case class Board() extends Component {
+case class GameBoard() extends Component {
   def render(): Vector[Element] = ???
 }
 
-case class SnakeGameContainer(board: Board, gameOver: GameOver) extends Component {
+case class SnakeGameContainer(children: Vector[Component]) extends Component {
   def render(): Vector[Element] = {
-    Vector(Element("div", Vector("container"), None, Vector.empty))
+    val elementNodes: Vector[ElementNode] = for {
+      element <- children.flatMap(_.render())
+    } yield ElementNode(element)
+    Vector(Element("div", Vector("container"), None, elementNodes))
   }
 }
 
