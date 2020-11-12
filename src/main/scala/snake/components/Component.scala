@@ -1,6 +1,6 @@
 package snake.components
 
-import snake.{EmptyCell, FoodCell, SnakePart, Wall}
+import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, SnakeGameWorld, SnakePart, Wall}
 
 // <SnakeGameContainer>
 //    <Board>
@@ -46,8 +46,48 @@ case class GameOver(isPlaying: Boolean) extends Component {
   }
 }
 
-case class GameBoard() extends Component {
-  def render(): Vector[Element] = ???
+case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
+  def render(): Vector[Element] = {
+    def putSnakeOn(snakeGameWorld: SnakeGameWorld): SnakeGameWorld = { //TODO: move to where appropriate
+      def getIndex(location: Location): Int = location match {
+        case Location(x, y) => snakeGameWorld.board.cellIndex(x, y)
+
+      }
+      def foodVisible(expiryTime: MoveNumber, moveNumber: MoveNumber): Boolean = {
+        val blinkTime = expiryTime - moveNumber
+        if (blinkTime > 4) true
+        else blinkTime % 2 == 0
+      } //TODO: move to where appropriate
+      val currentSnakeLocation = snakeGameWorld.snake.location.map(getIndex)
+      val currentFoodLocation = snakeGameWorld.food match {
+        case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some(getIndex(location))
+        case _ => None
+      }
+
+      val newCells = snakeGameWorld.board.cell.zipWithIndex.map {
+        case (cell, index) =>
+          if(currentSnakeLocation.contains(index)) SnakePart
+          else if(currentFoodLocation.contains(index)) FoodCell
+          else cell
+      }
+      snakeGameWorld.copy(board = snakeGameWorld.board.copy(cell = newCells))
+
+    }
+
+    val children = Range(0, snakeGameWorld.board.height).flatMap { y =>
+      Range(0, snakeGameWorld.board.width).map { x =>
+        val newSnakeGameWorld = putSnakeOn(snakeGameWorld)
+        val cell = Cell(newSnakeGameWorld.board.cellAt(Location(x, y)), x, y, snakeGameWorld.board.height)
+        cell
+      }
+    }
+      .flatMap(_.render())
+      .map(ElementNode)
+      .toVector
+    val board = ElementNode(Element("div", Vector("board"), None, children))
+    val container = Element("div", Vector("container"), None, Vector(board))
+    Vector(container) //TODO: game over component
+  }
 }
 
 case class SnakeGameContainer(children: Vector[Component]) extends Component {
