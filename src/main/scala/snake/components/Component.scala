@@ -2,11 +2,6 @@ package snake.components
 
 import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, SnakeGameWorld, SnakePart, Wall}
 
-// <SnakeGameContainer>
-//    <Board>
-//      <Cell>
-//    <GameOver>
-
 sealed trait Node
 case class TextNode(data: String) extends Node
 case class ElementNode(data: Element) extends Node
@@ -74,16 +69,17 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
 
     }
 
-    val children = Range(0, snakeGameWorld.board.height).flatMap { y =>
-      Range(0, snakeGameWorld.board.width).map { x =>
-        val newSnakeGameWorld = putSnakeOn(snakeGameWorld)
-        val cell = Cell(newSnakeGameWorld.board.cellAt(Location(x, y)), x, y, snakeGameWorld.board.height)
-        cell
-      }
-    }
-      .flatMap(_.render())
-      .map(ElementNode)
-      .toVector
+    val nodes = for {
+      y <- Range(0, snakeGameWorld.board.height)
+      x <- Range(0, snakeGameWorld.board.width)
+      newSnakeGameWorld = putSnakeOn(snakeGameWorld)
+      cell = Cell(newSnakeGameWorld.board.cellAt(Location(x, y)), x, y, snakeGameWorld.board.height)
+      element <- cell.render()
+      node = ElementNode(element)
+    } yield node
+
+    val children = nodes.toVector
+
     val board = ElementNode(Element("div", Vector("board"), None, children))
     val container = Element("div", Vector("container"), None, Vector(board))
     Vector(container) //TODO: game over component
