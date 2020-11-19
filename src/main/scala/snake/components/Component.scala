@@ -80,9 +80,11 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
 
     val children = nodes.toVector
 
-    val board = ElementNode(Element("div", Vector("board"), None, children))
-    val container = Element("div", Vector("container"), None, Vector(board))
-    Vector(container) //TODO: game over component
+    val gameOverElementNodes: Vector[ElementNode] = GameOver(snakeGameWorld.isPlaying).render().map(elem => ElementNode(elem))
+
+    val board: ElementNode = ElementNode(Element("div", Vector("board"), None, children))
+    val container = Element("div", Vector("container"), None, board +: gameOverElementNodes)
+    Vector(container)
   }
 }
 

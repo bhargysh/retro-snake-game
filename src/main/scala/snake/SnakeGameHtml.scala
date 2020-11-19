@@ -1,7 +1,8 @@
 package snake
 
 import org.scalajs.dom.raw.Element
-import org.scalajs.dom.{Document, Node}
+import org.scalajs.dom.{Document, Node, console}
+import snake.components.{ElementNode, GameBoard, SnakeGameContainer, TextNode}
 
 class SnakeGameHtml(document: Document) {
   private def createElement(tag: String, parentElement: Element, classes: String*): Element = {
@@ -21,26 +22,48 @@ class SnakeGameHtml(document: Document) {
   }
 
   def render(snakeGameWorld: SnakeGameWorld): Node = {
-    val container = document.createElement("div")
-    container.classList.add("container")
-
-    val board = createElement("div", container, "board")
-
-    if (!snakeGameWorld.isPlaying) {
-      val gameOverElement = createElement("div", container,"gameover")
-      createTextElement("GAME OVER", "span", gameOverElement, "gameover-span")
+//    val container = SnakeGameContainer(Vector(???))
+//
+    val boardElements: Vector[components.Element] = GameBoard(snakeGameWorld).render()
+    def convertToHtmlElement(element: components.Element): Element = {
+      val result = document.createElement(element.tag)
+      element.style.foreach(s => result.setAttribute("style", s))
+      element.classes.foreach(c => result.classList.add(c))
+      element.children.foreach(ch => result.appendChild(ch match {
+        case TextNode(data) => document.createTextNode(data)
+        case ElementNode(data) => convertToHtmlElement(data)
+      }))
+      result
     }
 
-    val newSnakeGameWorld = putSnakeOn(snakeGameWorld)
-    Range(0, snakeGameWorld.board.height).map { y =>
-      Range(0, snakeGameWorld.board.width).map { x =>
-        val cell = createTextElement(
-          cellEmoji(newSnakeGameWorld.board.cellAt(Location(x, y))), "div", board
-        )
-        cell.setAttribute("style", s"grid-column: ${x+1}; grid-row: ${snakeGameWorld.board.height - y};")
-      }
-    }
-    container
+    val boardHtmlElements = boardElements.map(convertToHtmlElement)
+
+    val documentFragment = document.createDocumentFragment()
+    console.log(boardHtmlElements)
+    boardHtmlElements.foreach(documentFragment.appendChild)
+
+    documentFragment
+
+//    val container = document.createElement("div")
+//    container.classList.add("container")
+//
+//    val board = createElement("div", container, "board")
+//
+//    if (!snakeGameWorld.isPlaying) {
+//      val gameOverElement = createElement("div", container,"gameover")
+//      createTextElement("GAME OVER", "span", gameOverElement, "gameover-span")
+//    }
+//
+//    val newSnakeGameWorld = putSnakeOn(snakeGameWorld)
+//    Range(0, snakeGameWorld.board.height).map { y =>
+//      Range(0, snakeGameWorld.board.width).map { x =>
+//        val cell = createTextElement(
+//          cellEmoji(newSnakeGameWorld.board.cellAt(Location(x, y))), "div", board
+//        )
+//        cell.setAttribute("style", s"grid-column: ${x+1}; grid-row: ${snakeGameWorld.board.height - y};")
+//      }
+//    }
+//    container
   }
 
   def putSnakeOn(snakeGameWorld: SnakeGameWorld): SnakeGameWorld = {

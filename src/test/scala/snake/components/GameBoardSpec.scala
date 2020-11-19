@@ -5,17 +5,15 @@ import snake.{FoodAbsent, FoodPresent, Location, MoveNumber, SnakeGameHtml, Snak
 
 class GameBoardSpec extends Specification {
 
-  def findNodesWithText(node: Node, text: String): Vector[Node] = {
-    node match {
-      case TextNode(data) if data == text => Vector(node)
-      case ElementNode(Element(_, _, _, children)) => children.flatMap(findNodesWithText(_, text))
+  def findNodesWithText(element: Element, text: String): Vector[Element] = {
+    element.children.flatMap {
+      case TextNode(data) if data == text => Vector(element)
+      case ElementNode(childElement) => findNodesWithText(childElement, text)
       case _ => Vector.empty
     }
   }
-  def findNodesWithText(elems: Vector[Element], text: String): Vector[Node] = {
-    elems.flatMap {
-      case Element(_, _, _, children) => children.flatMap(findNodesWithText(_, text))
-    }
+  def findNodesWithText(elems: Vector[Element], text: String): Vector[Element] = {
+    elems.flatMap(elem => findNodesWithText(elem, text))
   }
   "SnakeGameHtml" should {
     "render the snake" in {
@@ -27,10 +25,8 @@ class GameBoardSpec extends Specification {
       val snakeGameWorldWithFood = SnakeGameWorld.newSnakeGameWorld.copy(food = FoodPresent(Location(1, 1), MoveNumber(200)))
       val gameBoard = GameBoard(snakeGameWorldWithFood)
       val elements = gameBoard.render()
-      findNodesWithText(elements, "🍕") must contain((n: Node) => {
-        ???
-//        val parentNode = n.parentNode
-//        parentNode.attributes.getNamedItem("style").value mustEqual "grid-column: 2; grid-row: 9;"
+      findNodesWithText(elements, "🍕") must contain((e: Element) => {
+        e.style must beSome("grid-column: 2; grid-row: 9;") // (1,1) is equivalent to the css grid's 2, 9
       })
     }
     "render no food if it should not be visible" in {

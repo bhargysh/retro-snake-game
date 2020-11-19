@@ -10,11 +10,11 @@ object Main {
     appendPar(document.body, "Snake game!!!!")
     val world = SnakeGameWorld.newSnakeGameWorld
     val html = new SnakeGameHtml(document)
-    val renderedWorld = html.render(world)
-    val boardUI = document.createElement("div")
-    window.setTimeout(() => updateGame(world, html, renderedWorld, boardUI), 1000)
+    val renderedWorld: Node = html.render(world)
+    val boardUI: Element = document.createElement("div")
     document.body.appendChild(boardUI)
     boardUI.appendChild(renderedWorld)
+    window.setTimeout(() => updateGame(world, html, renderedWorld, boardUI), 1000)
     document.addEventListener("keydown", (event: KeyboardEvent) => {
       val maybeDirection = Keyboard.stringToDirection(event.key)
       maybeDirection match {
@@ -29,7 +29,7 @@ object Main {
     val maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
     val newWorld = world.play(maybeDirection)
     val newRenderedWorld = html.render(newWorld)
-    boardUI.replaceChild(newRenderedWorld, oldWorld)
+    boardUI.replaceChild(newRenderedWorld, oldWorld) //TODO 19th Nov: Failed to execute 'replaceChild' on 'Node'
     if (newWorld.isPlaying) {
       window.setTimeout(() => updateGame(newWorld, html, newRenderedWorld, boardUI), 1000)
     }
