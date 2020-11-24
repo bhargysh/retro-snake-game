@@ -29,7 +29,7 @@ object Main {
     val maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
     val newWorld = world.play(maybeDirection)
     val newRenderedWorld = html.render(newWorld)
-    boardUI.replaceChild(newRenderedWorld, oldWorld) //TODO 19th Nov: Failed to execute 'replaceChild' on 'Node'
+    boardUI.replaceChild(newRenderedWorld, oldWorld)
     if (newWorld.isPlaying) {
       window.setTimeout(() => updateGame(newWorld, html, newRenderedWorld, boardUI), 1000)
     }
