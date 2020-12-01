@@ -2,6 +2,8 @@ package snake.components
 
 import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, SnakeGameWorld, SnakePart, Wall}
 
+import scala.collection.immutable
+
 sealed trait Node
 case class TextNode(data: String) extends Node
 case class ElementNode(data: Element) extends Node
@@ -43,7 +45,7 @@ case class GameOver(isPlaying: Boolean) extends Component {
 
 case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
 
-  private def putSnakeOn(): SnakeGameWorld = {
+  private def putSnakeOn(): Array[snake.Cell] = {
     def getIndex(location: Location): Int = location match {
       case Location(x, y) => snakeGameWorld.board.cellIndex(x, y)
 
@@ -60,23 +62,23 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
       case _ => None
     }
 
-    val newCells = snakeGameWorld.board.cell.zipWithIndex.map {
+    val newCells: Array[snake.Cell] = snakeGameWorld.board.cell.zipWithIndex.map {
       case (cell, index) =>
         if(currentSnakeLocation.contains(index)) SnakePart
         else if(currentFoodLocation.contains(index)) FoodCell
         else cell
     }
-    snakeGameWorld.copy(board = snakeGameWorld.board.copy(cell = newCells)) //TODO 24th Nov: not change SnakeGameWorld just to render
+    newCells //TODO 24th Nov: not change SnakeGameWorld just to render
 
   }
 
   def render(): Vector[Element] = {
 
-    val nodes = for {
+    val nodes: immutable.Seq[ElementNode] = for {
       y <- Range(0, snakeGameWorld.board.height)
       x <- Range(0, snakeGameWorld.board.width)
-      newSnakeGameWorld = putSnakeOn()
-      cell = Cell(newSnakeGameWorld.board.cellAt(Location(x, y)), x, y, snakeGameWorld.board.height)
+      newCells = putSnakeOn()
+      cell = Cell(newCells(snakeGameWorld.board.cellIndex(x, y)), x, y, snakeGameWorld.board.height)
       element <- cell.render()
       node = ElementNode(element)
     } yield node
