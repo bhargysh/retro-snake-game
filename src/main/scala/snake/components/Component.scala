@@ -45,40 +45,30 @@ case class GameOver(isPlaying: Boolean) extends Component {
 
 case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
 
-  private def putSnakeOn(): Array[snake.Cell] = {
-    def getIndex(location: Location): Int = location match {
-      case Location(x, y) => snakeGameWorld.board.cellIndex(x, y)
+  private def foodVisible(expiryTime: MoveNumber, moveNumber: MoveNumber): Boolean = {
+    val blinkTime = expiryTime - moveNumber
+    if (blinkTime > 4) true
+    else blinkTime % 2 == 0
+  } //TODO: revisit to make it not so hacky
 
-    }
-    def foodVisible(expiryTime: MoveNumber, moveNumber: MoveNumber): Boolean = {
-      val blinkTime = expiryTime - moveNumber
-      if (blinkTime > 4) true
-      else blinkTime % 2 == 0
-    } //TODO: revisit to make it not so hacky
-
-    val currentSnakeLocation = snakeGameWorld.snake.location.map(getIndex)
-    val currentFoodLocation = snakeGameWorld.food match {
-      case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some(getIndex(location))
+  def render(): Vector[Element] = {
+    val currentFoodLocation: Option[Location] = snakeGameWorld.food match {
+      case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some(location)
       case _ => None
     }
 
-    val newCells: Array[snake.Cell] = snakeGameWorld.board.cell.zipWithIndex.map {
-      case (cell, index) =>
-        if(currentSnakeLocation.contains(index)) SnakePart
-        else if(currentFoodLocation.contains(index)) FoodCell
+    def convertToApparantCell(cell: snake.Cell, location: Location): snake.Cell = {
+        if(snakeGameWorld.snake.location.contains(location)) SnakePart
+        else if(currentFoodLocation.contains(location)) FoodCell
         else cell
     }
-    newCells //TODO 24th Nov: not change SnakeGameWorld just to render
-
-  }
-
-  def render(): Vector[Element] = {
 
     val nodes: immutable.Seq[ElementNode] = for {
       y <- Range(0, snakeGameWorld.board.height)
       x <- Range(0, snakeGameWorld.board.width)
-      newCells = putSnakeOn()
-      cell = Cell(newCells(snakeGameWorld.board.cellIndex(x, y)), x, y, snakeGameWorld.board.height)
+      location = Location(x, y)
+      snakeCell = convertToApparantCell(snakeGameWorld.board.cellAt(location), location)
+      cell = Cell(snakeCell, x, y, snakeGameWorld.board.height)
       element <- cell.render()
       node = ElementNode(element)
     } yield node
