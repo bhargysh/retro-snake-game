@@ -1,11 +1,9 @@
 package snake
-import cats.effect.{ExitCode, IO, IOApp, Timer}
-import org.scalajs.dom
-import dom.{Node, console, document, window}
+import cats.effect.{ExitCode, IO, IOApp}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
+import org.scalajs.dom.{Node, document}
 
 import scala.concurrent.duration.{Duration, SECONDS}
-import scala.scalajs.js.annotation.{JSExport, JSExportTopLevel}
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
@@ -14,16 +12,18 @@ object Main extends IOApp {
       html = new SnakeGameHtml(document)
       renderedWorld: Node = html.render(world)
       boardUI <- appendBoardToDocument(renderedWorld)
-      _ <- loop[Node](updateGame(world, html, boardUI))(renderedWorld)
       _ <- actionOnKeyboardEvent(boardUI)
+      _ <- loop[(Node, SnakeGameWorld)](updateGame(html, boardUI))((renderedWorld, world))
     } yield ExitCode.Success
 
-  private def loop[A](work: A => IO[A])(oldRenderedNode: A): IO[Nothing] = for {
+//  TODO: Simplify this for next time
+  private def loop[A](work: A => IO[Option[A]])(old: A): IO[Unit] = for {
     _ <- timer.sleep(Duration(1, SECONDS))
-    _ = IO(console.log("-------", oldRenderedNode))
-    newRenderedNode <- work(oldRenderedNode)
-    _ = IO(console.log("-------", newRenderedNode)) //TODO: IO is not evaluating, work out why!
-    result <- loop(work)(newRenderedNode)
+    newRenderedNode <- work(old)
+    result <- newRenderedNode match {
+      case Some(newA) => loop(work)(newA)
+      case None => IO.unit
+    }
   } yield result
 
   private def actionOnKeyboardEvent(boardUI: Element): IO[Unit] = IO {
@@ -36,10 +36,6 @@ object Main extends IOApp {
     })
   }
 
-//  private def setTimeout(world: SnakeGameWorld, html: SnakeGameHtml, renderedWorld: Node, boardUI: Element): IO[Int] = IO {
-//    window.setTimeout(() => updateGame(world, html, renderedWorld, boardUI), 1000)
-//  }
-
   private def appendBoardToDocument(renderedWorld: Node): IO[Element] = IO {
     val boardUI: Element = document.createElement("div")
     document.body.appendChild(boardUI)
@@ -47,14 +43,27 @@ object Main extends IOApp {
     boardUI
   }
 
-  private def updateGame(world: SnakeGameWorld, html: SnakeGameHtml, boardUI: Element)(oldWorld: Node): IO[Node] = for {
+  private def updateGame(html: SnakeGameHtml, boardUI: Element)(oldState: (Node, SnakeGameWorld)): IO[Option[(Node, SnakeGameWorld)]] = for {
     maybeDirectionData <- IO(Option(boardUI.getAttribute("data-direction")))
     maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
+    (oldRenderedWorld, world) = oldState
     newWorld = world.play(maybeDirection)
     newRenderedWorld = html.render(newWorld)
-    _ <- IO(boardUI.replaceChild(newRenderedWorld, oldWorld))
-//    y = if (newWorld.isPlaying) {
-//      setTimeout(newWorld, html, newRenderedWorld, boardUI)
-//    }
-  } yield newRenderedWorld
+    _ <- IO(boardUI.replaceChild(newRenderedWorld, oldRenderedWorld))
+    result = if (newWorld.isPlaying) {
+      Some((newRenderedWorld, newWorld))
+    } else {
+      None
+    }
+  } yield result
 }
+
+// Nothing -> 0 value, doesn't return
+// Unit -> 1 value
+// Boolean -> true, false -> sum type
+// Option[Unit] -> Some(()), None -> sum type
+// Option[Boolean] -> Some(true), Some(false), None -> sum type
+// (Boolean, Byte) -> plenty of combinations -> product type -> 2*256 = 512 options
+// Boolean => Boolean -> 4 possible funcs (2^2)
+// (Nothing, Nothing) -> 0 values
+// (Option[Nothing], Nothing) -> (1+1*0 * 0) = 0 values
