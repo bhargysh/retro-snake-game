@@ -1,7 +1,9 @@
 package snake
+import cats.Monad
 import cats.effect.{ExitCode, IO, IOApp}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
+
 
 import scala.concurrent.duration.{Duration, SECONDS}
 
@@ -12,19 +14,22 @@ object Main extends IOApp {
       html = new SnakeGameHtml(document)
       renderedWorld: Node = html.render(world)
       boardUI <- appendBoardToDocument(renderedWorld)
+      gameStep = new GameStep(getInput(boardUI), renderView(boardUI, html))
       _ <- actionOnKeyboardEvent(boardUI)
-      _ <- loop[(Node, SnakeGameWorld)](updateGame(html, boardUI))((renderedWorld, world))
+      _ <- loop[(Node, SnakeGameWorld)](gameStep.updateGame)((renderedWorld, world))
     } yield ExitCode.Success
 
-//  TODO: Simplify this for next time
-  private def loop[A](work: A => IO[Option[A]])(old: A): IO[Unit] = for {
-    _ <- timer.sleep(Duration(1, SECONDS))
-    newRenderedNode <- work(old)
-    result <- newRenderedNode match {
-      case Some(newA) => loop(work)(newA)
-      case None => IO.unit
-    }
-  } yield result
+  private def loop[A](work: A => IO[Option[A]])(old: A): IO[Unit] = Monad[IO].tailRecM(old) { old =>
+    for {
+      _ <- timer.sleep(Duration(1, SECONDS))
+      newRenderedNode <- work(old)
+    } yield newRenderedNode.toLeft(())
+  }
+
+  private def getInput(boardUI: Element): IO[Option[Direction]] = for {
+    maybeDirectionData <- IO(Option(boardUI.getAttribute("data-direction")))
+    maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
+  } yield maybeDirection
 
   private def actionOnKeyboardEvent(boardUI: Element): IO[Unit] = IO {
     document.addEventListener("keydown", (event: KeyboardEvent) => {
@@ -43,19 +48,11 @@ object Main extends IOApp {
     boardUI
   }
 
-  private def updateGame(html: SnakeGameHtml, boardUI: Element)(oldState: (Node, SnakeGameWorld)): IO[Option[(Node, SnakeGameWorld)]] = for {
-    maybeDirectionData <- IO(Option(boardUI.getAttribute("data-direction")))
-    maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
-    (oldRenderedWorld, world) = oldState
-    newWorld = world.play(maybeDirection)
-    newRenderedWorld = html.render(newWorld)
+  //TODO: test it!
+  private def renderView(boardUI: Element, html: SnakeGameHtml)(newSnakeGameWorld: SnakeGameWorld, oldRenderedWorld: Node): IO[Node] = for {
+    newRenderedWorld <- IO(html.render(newSnakeGameWorld))
     _ <- IO(boardUI.replaceChild(newRenderedWorld, oldRenderedWorld))
-    result = if (newWorld.isPlaying) {
-      Some((newRenderedWorld, newWorld))
-    } else {
-      None
-    }
-  } yield result
+  } yield newRenderedWorld
 }
 
 // Nothing -> 0 value, doesn't return
