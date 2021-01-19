@@ -3,7 +3,7 @@ package snake
 import cats.effect.IO
 import org.scalajs.dom.Node
 
-class GameStep(getInput: IO[Option[Direction]], renderView: (SnakeGameWorld, Node) => IO[Node]) {
+class GameStep(getInput: IO[Option[Direction]], renderView: SnakeGameWorld => IO[Unit]) {
 
 //  TODO: Test GameStep somehow...
 //  TODO: Change state to only contain the SnakeGameWorld
@@ -12,11 +12,12 @@ class GameStep(getInput: IO[Option[Direction]], renderView: (SnakeGameWorld, Nod
     maybeDirection <- getInput
     (oldRenderedWorld, world) = oldState
     newSnakeGameWorld = world.play(maybeDirection)
-    newRenderedWorld <- renderView(newSnakeGameWorld, oldRenderedWorld)
-    result = if (newSnakeGameWorld.isPlaying) {
-      Some((newRenderedWorld, newSnakeGameWorld))
-    } else {
-      None
-    }
+    _ = renderView(newSnakeGameWorld)
+//    result = if (newSnakeGameWorld.isPlaying) {
+//      Some((newRenderedWorld, newSnakeGameWorld))
+//    } else {
+//      None
+//    }
+    result = ???
   } yield result
 }

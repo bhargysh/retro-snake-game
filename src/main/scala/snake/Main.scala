@@ -14,7 +14,8 @@ object Main extends IOApp {
       html = new SnakeGameHtml(document)
       renderedWorld: Node = html.render(world)
       boardUI <- appendBoardToDocument(renderedWorld)
-      gameStep = new GameStep(getInput(boardUI), renderView(boardUI, html))
+      renderer <- Renderer(boardUI, html.render, renderedWorld)
+      gameStep = new GameStep(getInput(boardUI), renderer.renderView)
       _ <- actionOnKeyboardEvent(boardUI)
       _ <- loop[(Node, SnakeGameWorld)](gameStep.updateGame)((renderedWorld, world))
     } yield ExitCode.Success
@@ -47,12 +48,6 @@ object Main extends IOApp {
     boardUI.appendChild(renderedWorld)
     boardUI
   }
-
-  //TODO: test it!
-  private def renderView(boardUI: Element, html: SnakeGameHtml)(newSnakeGameWorld: SnakeGameWorld, oldRenderedWorld: Node): IO[Node] = for {
-    newRenderedWorld <- IO(html.render(newSnakeGameWorld))
-    _ <- IO(boardUI.replaceChild(newRenderedWorld, oldRenderedWorld))
-  } yield newRenderedWorld
 }
 
 // Nothing -> 0 value, doesn't return
