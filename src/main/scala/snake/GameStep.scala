@@ -1,23 +1,19 @@
 package snake
 
 import cats.effect.IO
-import org.scalajs.dom.Node
 
 class GameStep(getInput: IO[Option[Direction]], renderView: SnakeGameWorld => IO[Unit]) {
 
-//  TODO: Test GameStep somehow...
-//  TODO: Change state to only contain the SnakeGameWorld
+//  TODO: Test GameStep!!
 
-  def updateGame(oldState: (Node, SnakeGameWorld)): IO[Option[(Node, SnakeGameWorld)]] = for {
+  def updateGame(snakeGameWorld: SnakeGameWorld): IO[Option[SnakeGameWorld]] = for {
     maybeDirection <- getInput
-    (oldRenderedWorld, world) = oldState
-    newSnakeGameWorld = world.play(maybeDirection)
+    newSnakeGameWorld = snakeGameWorld.play(maybeDirection)
     _ = renderView(newSnakeGameWorld)
-//    result = if (newSnakeGameWorld.isPlaying) {
-//      Some((newRenderedWorld, newSnakeGameWorld))
-//    } else {
-//      None
-//    }
-    result = ???
+    result = if (newSnakeGameWorld.isPlaying) {
+      Some(newSnakeGameWorld)
+    } else {
+      None
+    }
   } yield result
 }

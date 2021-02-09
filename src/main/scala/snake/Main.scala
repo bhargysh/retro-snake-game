@@ -17,7 +17,7 @@ object Main extends IOApp {
       renderer <- Renderer(boardUI, html.render, renderedWorld)
       gameStep = new GameStep(getInput(boardUI), renderer.renderView)
       _ <- actionOnKeyboardEvent(boardUI)
-      _ <- loop[(Node, SnakeGameWorld)](gameStep.updateGame)((renderedWorld, world))
+      _ <- loop[SnakeGameWorld](gameStep.updateGame)(world)
     } yield ExitCode.Success
 
   private def loop[A](work: A => IO[Option[A]])(old: A): IO[Unit] = Monad[IO].tailRecM(old) { old =>
