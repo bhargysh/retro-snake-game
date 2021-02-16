@@ -9,7 +9,7 @@ class GameStep(getInput: IO[Option[Direction]], renderView: SnakeGameWorld => IO
   def updateGame(snakeGameWorld: SnakeGameWorld): IO[Option[SnakeGameWorld]] = for {
     maybeDirection <- getInput
     newSnakeGameWorld = snakeGameWorld.play(maybeDirection)
-    _ = renderView(newSnakeGameWorld)
+    _ <- renderView(newSnakeGameWorld) // should be arrow
     result = if (newSnakeGameWorld.isPlaying) {
       Some(newSnakeGameWorld)
     } else {
