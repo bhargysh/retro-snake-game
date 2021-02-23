@@ -24,5 +24,21 @@ class GameStepSpec extends Specification {
         renderedValue shouldEqual true
       }
     }
+
+    "return None when game is over" in {
+      val snake = Snake(List(Location(8,8), Location(8,7)), 2, Up)
+      val immovableSnakeGameWorld = SnakeGameWorld.newSnakeGameWorld.copy(snake = snake)
+      val gameStep = new GameStep(IO(None), _ => IO.unit)
+      gameStep.updateGame(immovableSnakeGameWorld).unsafeRunSync() shouldEqual None
+    }
+
+    "pass direction input to produce new SnakeGameWorld" in {
+      val direction = IO(Some(Left))
+      val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
+      val gameStep = new GameStep(direction, _ => IO.unit)
+      gameStep.updateGame(snakeGameWorld).unsafeRunSync() should beLike[Option[SnakeGameWorld]] { case actualSnakeGameWorld =>
+        actualSnakeGameWorld.map(_.snake.direction) should beSome(Left)
+      }
+    }
   }
 }
