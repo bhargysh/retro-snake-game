@@ -49,7 +49,7 @@ case class StartTurn(direction: Option[Direction]) extends FoodAction {
 object FoodAction {
   type E = (Board, MoveNumber)
   type Play[A] = ReaderT[P, E, A]
-  type P[A] = State[PlayState, A] //ReaderT[State[PlayState, A], Board, A] where A -> Unit
+  type P[A] = State[PlayState, A] //ReaderT[State[PlayState, A], (Board, MoveNumber), A] where A -> Unit
 
   def modifyState(f: PlayState => PlayState): Play[Unit] = {
     ReaderT.liftF[P, E, Unit](State.modify[PlayState](f))

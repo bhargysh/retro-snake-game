@@ -1,6 +1,6 @@
 package snake.components
 
-import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, SnakeGameWorld, SnakePart, Wall}
+import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, ObstacleCell, SnakeGameWorld, SnakePart, Wall}
 
 import scala.collection.immutable
 
@@ -22,6 +22,7 @@ case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int) extends Comp
       case Wall => "🛑"
       case EmptyCell => " "
       case FoodCell => "🍕"
+      case ObstacleCell => "\ud83d\udea8"
     }
     Vector(
       Element("div",
@@ -49,7 +50,7 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
     val blinkTime = expiryTime - moveNumber
     if (blinkTime > 4) true
     else blinkTime % 2 == 0
-  } //TODO: revisit to make it not so hacky
+  } //TODO: revisit to make it not so ugly UI
 
   def render(): Vector[Element] = {
     val currentFoodLocation: Option[Location] = snakeGameWorld.food match {

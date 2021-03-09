@@ -2,9 +2,9 @@ package snake
 import cats.Monad
 import cats.effect.{ExitCode, IO, IOApp}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
-import org.scalajs.dom.{Node, document}
+import org.scalajs.dom.{Node, console, document}
 
-
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, SECONDS}
 
 object Main extends IOApp {
@@ -49,6 +49,9 @@ object Main extends IOApp {
     boardUI
   }
 }
+
+//TODO: extension ideas (obstacles, poisonous food (increase speed, mess with directions), rendering of DOM if we really want to)
+//TODO: insert obstacle to world
 
 // Nothing -> 0 value, doesn't return
 // Unit -> 1 value
