@@ -1,23 +1,24 @@
 package snake
 
 import org.specs2.mutable.Specification
-import snake.FoodAction._
+import snake.BoardAction._
 
 class SnakeGameWorldSpec extends Specification {
   "play" should {
     "return a new SnakeGameWorld" in {
-      val vectorFoodAction = Vector.newBuilder[(PlayState, FoodAction)]
+      val vectorFoodAction = Vector.newBuilder[(PlayState, BoardAction)]
       val modifiedSnake = Snake(
         List(Location(2, 1), Location(2, 2)),
         length = 2,
         direction = Left
       )
-      val actionRunner: ActionRunner[FoodAction, Play] = new ActionRunner[FoodAction, Play]({foodAction: FoodAction =>
+      val expectedObstacles = Set(Location(2, 3))
+      val actionRunner: ActionRunner[BoardAction, Play] = new ActionRunner[BoardAction, Play]({ foodAction: BoardAction =>
         for {
-          state <- FoodAction.inspectState[PlayState](s => s)
-          _ <- FoodAction.modifyState(s => s.copy(playing = false, snake = modifiedSnake))
+          state <- BoardAction.inspectState[PlayState](s => s)
+          _ <- BoardAction.modifyState(s => s.copy(playing = false, snake = modifiedSnake, obstacles = expectedObstacles))
           _ = vectorFoodAction +=(state -> foodAction)
-        } yield Vector.empty[FoodAction]
+        } yield Vector.empty[BoardAction]
       })
       val snake = Snake(
         List(Location(1, 1), Location(1, 2)),
@@ -26,6 +27,7 @@ class SnakeGameWorldSpec extends Specification {
       )
       val initialSNG = SnakeGameWorld(
         snake,
+        SnakeGameWorld.obstacles,
         SnakeGameWorld.board,
         SnakeGameWorld.food,
         isPlaying = true,
@@ -34,7 +36,8 @@ class SnakeGameWorldSpec extends Specification {
         (moveNumber: MoveNumber, snake: Snake, board: Board) => ???
       )
       val updatedSNG = initialSNG.play(direction = Some(Up))
-      def expectedPlayState(playState: PlayState, foodAction: FoodAction) = {
+
+      def expectedPlayState(playState: PlayState, foodAction: BoardAction) = {
         playState.snake shouldEqual snake
         playState.playing shouldEqual true
         playState.food shouldEqual SnakeGameWorld.food
@@ -44,6 +47,7 @@ class SnakeGameWorldSpec extends Specification {
       updatedSNG.isPlaying shouldEqual false
       updatedSNG.moveNumber shouldEqual MoveNumber(2)
       updatedSNG.snake shouldEqual modifiedSnake
+      updatedSNG.obstacles shouldEqual expectedObstacles
     }
   }
 }

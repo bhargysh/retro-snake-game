@@ -12,6 +12,7 @@ class StartTurnSpec extends Specification {
         playing = true,
         FoodPresent(Location(2,3), MoveNumber(10)),
         Snake(initialLocation, 3, Left),
+        SnakeGameWorld.obstacles,
         new RandomFoodGenerator(new Random)
       )
       val direction = Some(Down)
@@ -22,7 +23,7 @@ class StartTurnSpec extends Specification {
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
         .value
-      val movedSnake: FoodAction = MovedSnake(newSnake)
+      val movedSnake: BoardAction = MovedSnake(newSnake)
 
       foodActions should contain(exactly(movedSnake))
       playState shouldEqual initialState

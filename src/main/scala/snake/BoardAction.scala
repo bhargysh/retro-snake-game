@@ -1,36 +1,37 @@
 package snake
 
 import cats.data.{ReaderT, State}
-import snake.FoodAction._
+import snake.BoardAction._
 
-sealed trait FoodAction {
-  def execute: Play[Vector[FoodAction]]
+
+sealed trait BoardAction {
+  def execute: Play[Vector[BoardAction]]
 }
 
-case object GrowSnake extends FoodAction {
-  def execute: Play[Vector[FoodAction]] = for {
+case object GrowSnake extends BoardAction {
+  def execute: Play[Vector[BoardAction]] = for {
     _ <- modifyState(playState => playState.copy(snake = playState.snake.copy(length = playState.snake.length + 1)))
-  } yield Vector.empty[FoodAction]
+  } yield Vector.empty[BoardAction]
 }
-case object AddFood extends FoodAction {
-  def execute: Play[Vector[FoodAction]] = for {
+case object AddFood extends BoardAction {
+  def execute: Play[Vector[BoardAction]] = for {
     moveNumber <- askForMoveNumber
     _ <- modifyState(_.copy(food = FoodAbsent(turns = moveNumber + 10)))
-  } yield Vector.empty[FoodAction]
+  } yield Vector.empty[BoardAction]
 }
-case object FoodReady extends FoodAction {
-  def execute: Play[Vector[FoodAction]] = for {
+case object FoodReady extends BoardAction {
+  def execute: Play[Vector[BoardAction]] = for {
     board <- askForBoard
     moveNumber <- askForMoveNumber
     _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board)))
-  } yield Vector.empty[FoodAction]
+  } yield Vector.empty[BoardAction]
 }
-case class MovedSnake(newSnake: Snake) extends FoodAction {
+case class MovedSnake(newSnake: Snake) extends BoardAction {
   private def isPlayingCurrently(snake: Snake): Play[Boolean] = for {
     board <- askForBoard
   } yield !board.isWall(snake.location.head)
 
-  def execute: Play[Vector[FoodAction]] = for {
+  def execute: Play[Vector[BoardAction]] = for {
     playing <- isPlayingCurrently(newSnake)
     moveNumber <- askForMoveNumber
     food <- inspectState(_.food)
@@ -39,14 +40,18 @@ case class MovedSnake(newSnake: Snake) extends FoodAction {
   } yield newActions
 }
 
-case class StartTurn(direction: Option[Direction]) extends FoodAction {
-  def execute: Play[Vector[FoodAction]] = for {
+case class StartTurn(direction: Option[Direction]) extends BoardAction {
+  def execute: Play[Vector[BoardAction]] = for {
     oldSnake <- inspectState(_.snake)
     movedSnake = oldSnake.move(direction)
   } yield Vector(MovedSnake(movedSnake))
 }
 
-object FoodAction {
+case object AddObstacle extends BoardAction {
+  def execute: Play[Vector[BoardAction]] = ???
+}
+
+object BoardAction {
   type E = (Board, MoveNumber)
   type Play[A] = ReaderT[P, E, A]
   type P[A] = State[PlayState, A] //ReaderT[State[PlayState, A], (Board, MoveNumber), A] where A -> Unit

@@ -9,29 +9,8 @@ import scala.util.Random
 import Generators._
 
 class RandomFoodGeneratorSpec extends Specification with ScalaCheck {
-  implicit val shrinkSnake: Shrink[Snake] = Shrink { case Snake(location, length, direction) =>
-    if (length < 3) {
-      Stream.empty[Snake]
-    }
-    else {
-      val newLocations = Shrink.shrink(location).filter(_.length >= 2) //only valid snakes generated
-      newLocations.flatMap { location =>
-        Stream(Snake(location, length, direction), Snake(location, location.length, direction))
-      }
-    }
-  }
-
-  implicit val snakeGen: Arbitrary[Snake] = Arbitrary(
-    for {
-    length <- Gen.choose(2,20)
-    location <- Gen.containerOfN[List, Location](length, arbitrary[Location])
-    direction <- arbitrary[Direction]
-    } yield Snake(location, length, direction)
-  )
-  implicit val moveNumberArb: Arbitrary[MoveNumber] = Arbitrary(
-    arbitrary[Int].map(number => MoveNumber(number))
-  )
   "Random food generator" should {
+    implicit val snakeArb = Arbitrary(Generators.snakeGen)
     "generate food that is not on the snake or wall" >> prop { (moveNumber: MoveNumber, snake: Snake) =>
       val food = new RandomFoodGenerator(new Random())
       val result: Food = food(moveNumber, snake, SnakeGameWorld.board) //empty board as it does not change

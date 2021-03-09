@@ -13,6 +13,7 @@ class MovedSnakeSpec extends Specification {
         playing = true,
         FoodPresent(Location(2,3), MoveNumber(10)),
         Snake(initialLocation, 3, Up),
+        SnakeGameWorld.obstacles,
         new RandomFoodGenerator(new Random)
       )
       val newSnake = Snake(Location(8, 9) :: initialLocation, 3, Up)
@@ -31,6 +32,7 @@ class MovedSnakeSpec extends Specification {
         playing = true,
         FoodPresent(Location(2,3), MoveNumber(10)),
         Snake(initialLocation, 3, Up),
+        SnakeGameWorld.obstacles,
         new RandomFoodGenerator(new Random)
       )
       val newSnake = Snake(Location(8, 9) :: initialLocation, 3, Up)
@@ -49,6 +51,7 @@ class MovedSnakeSpec extends Specification {
         playing = true,
         FoodPresent(Location(8, 7), MoveNumber(10)),
         Snake(initialLocation, 3, Down),
+        SnakeGameWorld.obstacles,
         new RandomFoodGenerator(new Random)
       )
       val newSnake = Snake(Location(8, 7) :: initialLocation, 3, Up)

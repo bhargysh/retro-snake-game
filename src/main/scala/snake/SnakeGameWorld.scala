@@ -2,11 +2,11 @@ package snake
 
 import cats.data.State
 import cats.implicits._
-import FoodAction._
+import BoardAction._
 
 import scala.util.Random
 
-case class PlayState(playing: Boolean, food: Food, snake: Snake, foodGenerator: FoodGenerator)
+case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], foodGenerator: FoodGenerator) //TODO: foodgenerator on its own?
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
@@ -18,17 +18,18 @@ object MoveNumber {
 }
 
 case class SnakeGameWorld(snake: Snake,
+                          obstacles: Set[Location],
                           board: Board,
                           food: Food,
                           isPlaying: Boolean,
                           moveNumber: MoveNumber,
-                          actionRunner: ActionRunner[FoodAction, Play],
+                          actionRunner: ActionRunner[BoardAction, Play],
                           foodGenerator: FoodGenerator
                          ) {
 
   def play(direction: Option[Direction]): SnakeGameWorld = {
 
-    val initialPlayState = PlayState(isPlaying, food, snake, foodGenerator)
+    val initialPlayState = PlayState(isPlaying, food, snake, obstacles, foodGenerator)
 
     val updateGameState: State[PlayState, Unit] =
       actionRunner
@@ -40,10 +41,7 @@ case class SnakeGameWorld(snake: Snake,
         .run(initialPlayState)
         .value
 
-    SnakeGameWorld(playState.snake, board, playState.food, playState.playing, moveNumber + 1, actionRunner, foodGenerator)
-
-
-//    TODO: why can't we use action runner to run everything / push it to Main when we use IO
+    SnakeGameWorld(playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, actionRunner, foodGenerator)
   }
 
 
@@ -67,11 +65,12 @@ object SnakeGameWorld {
 
   val food: Food = FoodPresent(Location(2,3), MoveNumber(20))
   val isPlaying: Boolean = true
+  val obstacles = Set.empty[Location]
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    val actionRunner = new ActionRunner[FoodAction, Play](_.execute)
+    val actionRunner = new ActionRunner[BoardAction, Play](_.execute)
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
 
-    new SnakeGameWorld(snake, board, food, isPlaying, MoveNumber(0), actionRunner, foodGenerator)
+    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0), actionRunner, foodGenerator)
   }
 }
