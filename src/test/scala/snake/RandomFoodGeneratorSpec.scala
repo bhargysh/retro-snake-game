@@ -1,12 +1,11 @@
 package snake
 
-import org.scalacheck.{Arbitrary, Gen, Shrink}
-import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Arbitrary
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
+import snake.Generators._
 
 import scala.util.Random
-import Generators._
 
 class RandomFoodGeneratorSpec extends Specification with ScalaCheck {
   "Random food generator" should {
