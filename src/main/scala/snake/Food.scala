@@ -8,7 +8,7 @@ case class FoodPresent(location: Location, expiryTime: MoveNumber) extends Food 
     if (location == snakeHead) {
       Vector(AddFood, GrowSnake)
     } else if (moveNumber == expiryTime) {
-      Vector(AddFood)
+      Vector(AddFood, AddObstacle)
     } else {
       Vector.empty
     }
