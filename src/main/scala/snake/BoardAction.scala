@@ -47,8 +47,14 @@ case class StartTurn(direction: Option[Direction]) extends BoardAction {
   } yield Vector(MovedSnake(movedSnake))
 }
 
-case object AddObstacle extends BoardAction {
-  def execute: Play[Vector[BoardAction]] = ???
+case object AddObstacle extends BoardAction { //add obstalce if they miss food
+  def execute: Play[Vector[BoardAction]] = for {
+    board <- askForBoard
+    _ <- modifyState { playState =>
+      val obstacle = playState.obstacleGenerator.apply(playState.food, playState.snake, board)
+      playState.copy(obstacles = Set(obstacle))
+    }
+  } yield Vector.empty[BoardAction]
 }
 
 object BoardAction {
