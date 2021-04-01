@@ -4,17 +4,11 @@ import org.specs2.mutable.Specification
 
 import scala.util.Random
 
-class StartTurnSpec extends Specification {
+class StartTurnSpec extends Specification with BoardActionFixtures {
   "Start turn action" should {
     "returns a moved snake" in {
       val initialLocation = List(Location(8, 8))
-      val initialState = PlayState(
-        playing = true,
-        FoodPresent(Location(2,3), MoveNumber(10)),
-        Snake(initialLocation, 3, Left),
-        SnakeGameWorld.obstacles,
-        new RandomFoodGenerator(new Random)
-      )
+      val initialState = initialPlayState.copy(snake = Snake(initialLocation, 3, Left))
       val direction = Some(Down)
       val newSnake = Snake(List(Location(8, 7), Location(8, 8)), 3, Down)
 
