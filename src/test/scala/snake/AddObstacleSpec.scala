@@ -1,17 +1,19 @@
 package snake
 
+import snake.Generators._
+import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
 import scala.util.Random
 
-class AddObstacleSpec extends Specification {
+class AddObstacleSpec extends Specification with ScalaCheck {
   "Add obstacle" should {
-    "modify obstacle state" in {
+    "modify obstacle state" >> prop { (food: Food, obstacles: Set[Location]) =>
       val initialState = PlayState(
         playing = true,
-        FoodAbsent(MoveNumber(3)),
+        food,
         Snake(List(Location(2,3), Location(2,4)), 3, Down),
-        SnakeGameWorld.obstacles,
+        obstacles,
         new RandomFoodGenerator(new Random),
         new RandomObstacleGenerator(new Random)
       )
@@ -20,8 +22,10 @@ class AddObstacleSpec extends Specification {
         .run(initialState)
         .value
 
-      playState.obstacles should haveLength(1)
+      println("initial obstacles", initialState.obstacles)
+
+      playState.obstacles should haveLength(initialState.obstacles.size + 1)
       boardActions should beEmpty
-    } //TODO: add property based testing here
+    }
   }
 }

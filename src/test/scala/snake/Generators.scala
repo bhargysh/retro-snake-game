@@ -32,10 +32,18 @@ object Generators {
   implicit val moveNumberArb: Arbitrary[MoveNumber] = Arbitrary(
     arbitrary[Int].map(number => MoveNumber(number))
   )
-  implicit val foodArb: Arbitrary[FoodPresent] = Arbitrary(
+  implicit val foodPresentArb: Arbitrary[FoodPresent] = Arbitrary(
     for {
       location <- arbitrary[Location]
       moveNumber <- arbitrary[MoveNumber]
     } yield FoodPresent(location, moveNumber)
   )
+
+  implicit val foodAbsentArb: Arbitrary[FoodAbsent] = Arbitrary(
+    for {
+      moveNumber <- arbitrary[MoveNumber]
+    } yield FoodAbsent(moveNumber)
+  )
+
+  implicit val foodGen: Arbitrary[Food] = Arbitrary(Gen.oneOf(foodPresentArb.arbitrary, foodAbsentArb.arbitrary))
 }

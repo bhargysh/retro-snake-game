@@ -3,12 +3,12 @@ package snake
 import scala.util.Random
 
 trait ObstacleGenerator {
-  def apply(food: Food, snake: Snake, board: Board): Location
+  def apply(food: Food, snake: Snake, board: Board, obstacles: Set[Location]): Location
 }
 
 
 class RandomObstacleGenerator(randomNumberGenerator: Random) extends ObstacleGenerator {
-  def apply(food: Food, snake: Snake, board: Board): Location = {
+  def apply(food: Food, snake: Snake, board: Board, obstacles: Set[Location]): Location = {
     val snakeLocation: Set[Location] = snake.location.toSet
     val emptyLocations: Set[Location] = board.locations.filter { location =>
       board.cellAt(location) == EmptyCell
@@ -17,7 +17,7 @@ class RandomObstacleGenerator(randomNumberGenerator: Random) extends ObstacleGen
       case FoodPresent(location, _) => Set(location)
       case FoodAbsent(_) => Set.empty[Location]
     }
-    val notAvailable = snakeLocation ++ foodLocation
+    val notAvailable = snakeLocation ++ foodLocation ++ obstacles
     val availableLocations = (emptyLocations -- notAvailable).toVector
     val position = randomNumberGenerator.nextInt(availableLocations.size)
     availableLocations(position)

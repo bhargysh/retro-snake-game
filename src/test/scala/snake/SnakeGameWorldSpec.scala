@@ -34,7 +34,7 @@ class SnakeGameWorldSpec extends Specification {
         MoveNumber(1),
         actionRunner,
         (moveNumber: MoveNumber, snake: Snake, board: Board) => ???,
-        (food: Food, snake: Snake, board: Board) => ???
+        (food: Food, snake: Snake, board: Board, obstacles: Set[Location]) => ???
       )
       val updatedSNG = initialSNG.play(direction = Some(Up))
 

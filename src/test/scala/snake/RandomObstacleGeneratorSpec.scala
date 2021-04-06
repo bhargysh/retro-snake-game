@@ -20,12 +20,13 @@ class RandomObstacleGeneratorSpec extends Specification with ScalaCheck {
     } yield Board(cells.toArray, width, height)
     implicit val board: Arbitrary[Board] = Arbitrary(boardGen)
 
-    "generate obstacle that is not on the snake, food or wall" >> prop { (snake: Snake, food: FoodPresent, board: Board) =>
+    "generate obstacle that is not on the snake, food or wall" >> prop { (snake: Snake, food: FoodPresent, board: Board, obstacles: Set[Location]) =>
       val obstacleGenerator = new RandomObstacleGenerator(new Random)
-      val result: Location = obstacleGenerator.apply(food, snake, board)
+      val result: Location = obstacleGenerator.apply(food, snake, board, obstacles)
       snake.location should not(contain(result))
       result shouldNotEqual food.location
       board.cellAt(result) shouldEqual EmptyCell
+      obstacles should not(contain(result))
     }.setParameters(Parameters(minTestsOk = 400))
   }
 }

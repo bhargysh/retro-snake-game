@@ -51,8 +51,9 @@ case object AddObstacle extends BoardAction { //add obstalce if they miss food
   def execute: Play[Vector[BoardAction]] = for {
     board <- askForBoard
     _ <- modifyState { playState =>
-      val obstacle = playState.obstacleGenerator.apply(playState.food, playState.snake, board)
-      playState.copy(obstacles = Set(obstacle))
+      val newObstacle = playState.obstacleGenerator.apply(playState.food, playState.snake, board, playState.obstacles)
+      println(newObstacle, playState.obstacles)
+      playState.copy(obstacles = playState.obstacles ++ Set(newObstacle))
     }
   } yield Vector.empty[BoardAction]
 }
