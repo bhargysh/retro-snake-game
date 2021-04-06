@@ -61,6 +61,7 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
     def convertToApparantCell(cell: snake.Cell, location: Location): snake.Cell = {
         if(snakeGameWorld.snake.location.contains(location)) SnakePart
         else if(currentFoodLocation.contains(location)) FoodCell
+        else if(snakeGameWorld.obstacles.contains(location)) ObstacleCell
         else cell
     }
 

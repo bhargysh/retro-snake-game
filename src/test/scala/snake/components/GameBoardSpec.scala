@@ -53,6 +53,13 @@ class GameBoardSpec extends Specification {
       val elements = gameBoard.render()
       findNodesWithText(elements, "GAME OVER") must beEmpty
     }
+    "renders obstacle" in {
+      val snakeGameWorldObstacle = SnakeGameWorld.newSnakeGameWorld.copy(obstacles = Set(Location(2,2)))
+      val gameBoard = GameBoard(snakeGameWorldObstacle)
+      val elements = gameBoard.render()
+
+      findNodesWithText(elements, "\ud83d\udea8") must haveLength(1)
+    }
   }
 
 }
