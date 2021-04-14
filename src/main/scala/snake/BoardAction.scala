@@ -29,7 +29,10 @@ case object FoodReady extends BoardAction {
 case class MovedSnake(newSnake: Snake) extends BoardAction {
   private def isPlayingCurrently(snake: Snake): Play[Boolean] = for {
     board <- askForBoard
-  } yield !board.isWall(snake.location.head)
+    obstacles <- inspectState(_.obstacles)
+    notWall = !board.isWall(snake.location.head)
+    notObstacle = !obstacles.contains(snake.location.head)
+  } yield notWall && notObstacle
 
   def execute: Play[Vector[BoardAction]] = for {
     playing <- isPlayingCurrently(newSnake)
@@ -52,7 +55,6 @@ case object AddObstacle extends BoardAction { //add obstalce if they miss food
     board <- askForBoard
     _ <- modifyState { playState =>
       val newObstacle = playState.obstacleGenerator.apply(playState.food, playState.snake, board, playState.obstacles)
-      println(newObstacle, playState.obstacles)
       playState.copy(obstacles = playState.obstacles ++ Set(newObstacle))
     }
   } yield Vector.empty[BoardAction]

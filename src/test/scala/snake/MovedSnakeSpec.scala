@@ -22,7 +22,6 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
     }
 
     "modify snake state" in {
-      val initialLocation = List(Location(8, 8), Location(2, 4))
       val initialState = initialPlayState.copy(snake = snake)
       val newSnake = Snake(Location(8, 9) :: initialLocation, 3, Up)
       val (playState, foodActions) = MovedSnake(newSnake).execute
@@ -35,16 +34,31 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
     }
 
     "return new FoodAction" in {
-      val initialLocation = List(Location(8, 8), Location(2, 4))
       val initialState = initialPlayState.copy(food = FoodPresent(Location(8, 7), MoveNumber(10)),
         snake = Snake(initialLocation, 3, Down))
       val newSnake = Snake(Location(8, 7) :: initialLocation, 3, Up)
-      val (playState, foodActions) = MovedSnake(newSnake).execute
+      val (_, boardActions) = MovedSnake(newSnake).execute
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
         .value
 
-      foodActions should contain(AddFood, GrowSnake)
+      boardActions should contain(AddFood, GrowSnake)
+    }
+
+    "modify play state when snake is on an obstacle" in {
+      val initialLocation = List(Location(1, 1), Location(1, 2))
+      val initialState = initialPlayState.copy(
+        snake = Snake(initialLocation, 3, Down),
+        obstacles = Set(Location(1, 3))
+      )
+      val newSnake = Snake(Location(1, 3) :: initialLocation, 3, Up)
+      val (playState, boardActions) = MovedSnake(newSnake).execute
+        .run(SnakeGameWorld.board, MoveNumber(9))
+        .run(initialState)
+        .value
+
+      playState.playing mustEqual false
+      boardActions must beEmpty
     }
 
   }

@@ -22,9 +22,8 @@ class AddObstacleSpec extends Specification with ScalaCheck {
         .run(initialState)
         .value
 
-      println("initial obstacles", initialState.obstacles)
-
       playState.obstacles should haveLength(initialState.obstacles.size + 1)
+      playState.obstacles should containAllOf(obstacles.toSeq)
       boardActions should beEmpty
     }
   }
