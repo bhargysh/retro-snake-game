@@ -3,13 +3,13 @@ package snake
 import scala.util.Random
 
 trait FoodGenerator {
-  def apply(moveNumber: MoveNumber, snake: Snake, board: Board): FoodPresent
+  def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): FoodPresent
 }
 
 class RandomFoodGenerator(randomNumberGenerator: Random) extends FoodGenerator {
 
-  def apply(moveNumber: MoveNumber, snake: Snake, board: Board): FoodPresent = {
-    val notAvailable: Set[Location] = snake.location.toSet
+  def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): FoodPresent = {
+    val notAvailable: Set[Location] = snake.location.toSet ++ obstacles
     val emptyLocations: Set[Location] = board.locations.filter { location =>
       board.cellAt(location) == EmptyCell
     }

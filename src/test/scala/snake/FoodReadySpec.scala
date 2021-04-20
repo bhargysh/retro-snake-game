@@ -7,7 +7,7 @@ class FoodReadySpec extends Specification with BoardActionFixtures {
   "FoodReady action" should {
     "modify food to be randomly generated in PlayState" in {
       val foodGenerator = new FoodGenerator {
-        def apply(moveNumber: MoveNumber, snake: Snake, board: Board): FoodPresent = FoodPresent(Location(2,3), MoveNumber(10))
+        def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): FoodPresent = FoodPresent(Location(2,3), MoveNumber(10))
       }
 
       val initialState = initialPlayState.copy(foodGenerator = foodGenerator)

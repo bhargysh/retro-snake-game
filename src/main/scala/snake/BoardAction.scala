@@ -23,7 +23,7 @@ case object FoodReady extends BoardAction {
   def execute: Play[Vector[BoardAction]] = for {
     board <- askForBoard
     moveNumber <- askForMoveNumber
-    _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board)))
+    _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board, playState.obstacles)))
   } yield Vector.empty[BoardAction]
 }
 case class MovedSnake(newSnake: Snake) extends BoardAction {

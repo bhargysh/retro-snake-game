@@ -30,7 +30,7 @@ object Generators {
     } yield Snake(location, length, direction)
 
   implicit val moveNumberArb: Arbitrary[MoveNumber] = Arbitrary(
-    arbitrary[Int].map(number => MoveNumber(number))
+    Gen.posNum[Int].map(number => MoveNumber(number))
   )
   implicit val foodPresentArb: Arbitrary[FoodPresent] = Arbitrary(
     for {

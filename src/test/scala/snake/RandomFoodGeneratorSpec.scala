@@ -9,15 +9,23 @@ import scala.util.Random
 
 class RandomFoodGeneratorSpec extends Specification with ScalaCheck {
   "Random food generator" should {
-    implicit val snakeArb = Arbitrary(Generators.snakeGen)
-    "generate food that is not on the snake or wall" >> prop { (moveNumber: MoveNumber, snake: Snake) =>
+    implicit val snakeArb = Arbitrary(Generators.snakeGen.filter(snake => !snake.location.contains(Location(3, 3))))
+    "generate food that is not on the snake, wall, or obstable" >> prop { (moveNumber: MoveNumber, snake: Snake) =>
       val food = new RandomFoodGenerator(new Random())
-      val result: Food = food(moveNumber, snake, SnakeGameWorld.board) //empty board as it does not change
+      val foodLocation = Location(3,3)
+      val obstacleLocations = for {
+        x <- Range.inclusive(1, 8) //excluded wall
+        y <- Range.inclusive(1, 8)
+        l = Location(x, y)
+        if !snake.location.contains(l) && l != foodLocation
+      } yield l
+      val result: Food = food(moveNumber, snake, SnakeGameWorld.board, obstacleLocations.toSet)
       result should beLike[Food]{ case FoodPresent(location, expiryTime) =>
         expiryTime should beBetween(moveNumber + 5, moveNumber + 10).excludingEnd
         snake.location should not(contain(location))
         location.x should beBetween(1, 8)
         location.y should beBetween(1, 8)
+        obstacleLocations should not(contain(location))
       }
     }
   }
