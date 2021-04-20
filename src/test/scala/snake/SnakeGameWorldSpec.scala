@@ -3,8 +3,11 @@ package snake
 import org.specs2.mutable.Specification
 import snake.BoardAction._
 
+import scala.util.Random
+
 class SnakeGameWorldSpec extends Specification {
   "play" should {
+    implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     "return a new SnakeGameWorld" in {
       val vectorFoodAction = Vector.newBuilder[(PlayState, BoardAction)]
       val modifiedSnake = Snake(
@@ -33,7 +36,6 @@ class SnakeGameWorldSpec extends Specification {
         isPlaying = true,
         MoveNumber(1),
         actionRunner,
-        (moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]) => ???,
         (food: Food, snake: Snake, board: Board, obstacles: Set[Location]) => ???
       )
       val updatedSNG = initialSNG.play(direction = Some(Up))

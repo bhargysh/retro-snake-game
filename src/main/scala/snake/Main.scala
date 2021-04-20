@@ -6,9 +6,11 @@ import org.scalajs.dom.{Node, console, document}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, SECONDS}
+import scala.util.Random
 
 object Main extends IOApp {
-  def run(args: List[String]): IO[ExitCode] =
+  def run(args: List[String]): IO[ExitCode] = {
+    implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     for {
       world <- IO.pure(SnakeGameWorld.newSnakeGameWorld)
       html = new SnakeGameHtml(document)
@@ -19,6 +21,7 @@ object Main extends IOApp {
       _ <- actionOnKeyboardEvent(boardUI)
       _ <- loop[SnakeGameWorld](gameStep.updateGame)(world)
     } yield ExitCode.Success
+  }
 
   private def loop[A](work: A => IO[Option[A]])(old: A): IO[Unit] = Monad[IO].tailRecM(old) { old =>
     for {

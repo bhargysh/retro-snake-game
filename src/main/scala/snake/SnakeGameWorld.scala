@@ -3,10 +3,11 @@ package snake
 import cats.data.State
 import cats.implicits._
 import BoardAction._
+import cats.Id
 
 import scala.util.Random
 
-case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], foodGenerator: FoodGenerator, obstacleGenerator: ObstacleGenerator) //TODO: foodgenerator on its own?
+case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], foodGenerator: FoodGenerator[Id], obstacleGenerator: ObstacleGenerator) //TODO: foodgenerator on its own?
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
@@ -24,11 +25,10 @@ case class SnakeGameWorld(snake: Snake,
                           isPlaying: Boolean,
                           moveNumber: MoveNumber,
                           actionRunner: ActionRunner[BoardAction, Play],
-                          foodGenerator: FoodGenerator,
                           obstacleGenerator: ObstacleGenerator
                          ) {
 
-  def play(direction: Option[Direction]): SnakeGameWorld = {
+  def play(direction: Option[Direction])(implicit foodGenerator: FoodGenerator[Id]): SnakeGameWorld = {
 
     val initialPlayState = PlayState(isPlaying, food, snake, obstacles, foodGenerator, obstacleGenerator)
 
@@ -43,7 +43,7 @@ case class SnakeGameWorld(snake: Snake,
         .value
 
     SnakeGameWorld(
-      playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, actionRunner, foodGenerator, obstacleGenerator
+      playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, actionRunner, obstacleGenerator
     ) //TODO: think about this model
   }
 
@@ -72,9 +72,8 @@ object SnakeGameWorld {
 
   def newSnakeGameWorld: SnakeGameWorld = {
     val actionRunner = new ActionRunner[BoardAction, Play](_.execute)
-    val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
 
-    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0), actionRunner, foodGenerator, obstacleGenerator)
+    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0), actionRunner, obstacleGenerator)
   }
 }

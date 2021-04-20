@@ -1,12 +1,13 @@
 package snake
 
+import cats.Id
 import org.specs2.mutable.Specification
 
 class FoodReadySpec extends Specification with BoardActionFixtures {
 
   "FoodReady action" should {
     "modify food to be randomly generated in PlayState" in {
-      val foodGenerator = new FoodGenerator {
+      val foodGenerator = new FoodGenerator[Id] {
         def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): FoodPresent = FoodPresent(Location(2,3), MoveNumber(10))
       }
 

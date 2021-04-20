@@ -4,8 +4,11 @@ import cats.effect.IO
 import cats.effect.concurrent.Ref
 import org.specs2.mutable.Specification
 
+import scala.util.Random
+
 class GameStepSpec extends Specification {
   "updateGame" should {
+    implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     "return new SnakeGameWorld when game is continuing" in {
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
       def renderView(ref: Ref[IO, Boolean])(snakeGameWorld: SnakeGameWorld): IO[Unit] = {
