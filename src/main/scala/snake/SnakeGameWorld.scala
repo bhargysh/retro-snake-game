@@ -1,13 +1,12 @@
 package snake
 
+import cats.{Functor, Monad}
 import cats.data.State
 import cats.implicits._
-import BoardAction._
-import cats.Id
 
 import scala.util.Random
 
-case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], foodGenerator: FoodGenerator[Id], obstacleGenerator: ObstacleGenerator) //TODO: foodgenerator on its own?
+case class PlayState[F[_]](playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], foodGenerator: FoodGenerator[F], obstacleGenerator: ObstacleGenerator) //TODO: foodgenerator on its own?
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
@@ -24,27 +23,27 @@ case class SnakeGameWorld(snake: Snake,
                           food: Food,
                           isPlaying: Boolean,
                           moveNumber: MoveNumber,
-                          actionRunner: ActionRunner[BoardAction, Play],
                           obstacleGenerator: ObstacleGenerator
                          ) {
 
-  def play(direction: Option[Direction])(implicit foodGenerator: FoodGenerator[Id]): SnakeGameWorld = {
+  def play[F[_]: Monad](direction: Option[Direction])(implicit foodGenerator: FoodGenerator[F]): F[SnakeGameWorld] = { //TODO: work on passing food generator another way...
+    val boardActionHelper = new BoardActionHelper[F]
 
-    val initialPlayState = PlayState(isPlaying, food, snake, obstacles, foodGenerator, obstacleGenerator)
+    import boardActionHelper._
 
-    val updateGameState: State[PlayState, Unit] =
+    val initialPlayState = PlayState[F](isPlaying, food, snake, obstacles, foodGenerator, obstacleGenerator)
+    val actionRunner: ActionRunner[BoardAction, Play] = new ActionRunner[BoardAction, Play](_.execute)
+    val updateGameState: F[SnakeGameWorld] =
       actionRunner
         .go(Vector(StartTurn(direction)))
         .run((board, moveNumber))
-
-    val (playState, ()) =
-      updateGameState
         .run(initialPlayState)
-        .value
-
-    SnakeGameWorld(
-      playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, actionRunner, obstacleGenerator
-    ) //TODO: think about this model
+        .map {
+          case (playState, _) => SnakeGameWorld(
+            playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, obstacleGenerator
+          )
+        }
+    updateGameState
   }
 
 
@@ -71,9 +70,8 @@ object SnakeGameWorld {
   val obstacles = Set.empty[Location]
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    val actionRunner = new ActionRunner[BoardAction, Play](_.execute)
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
 
-    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0), actionRunner, obstacleGenerator)
+    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0), obstacleGenerator)
   }
 }
