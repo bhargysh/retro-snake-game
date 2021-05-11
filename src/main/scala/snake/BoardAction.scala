@@ -9,14 +9,14 @@ class BoardActionHelper[F[_]: Monad]() {
   type Play[A] = ReaderT[P, E, A]
 
   def modifyState(f: PlayState[F] => PlayState[F]): Play[Unit] = {
-    ReaderT.liftF[P, E, Unit](State.modify[PlayState[F]](f))
+    ReaderT.liftF[P, E, Unit](StateT.modify[F, PlayState[F]](f))
     //          F[_] -> underlying monad
     //          A -> extram params it needs
     //          B -> return type
   }
 
   def inspectState[S](f: PlayState[F] => S): Play[S] = {
-    ReaderT.liftF[P, E, S](State.inspect(f))
+    ReaderT.liftF[P, E, S](StateT.inspect(f))
   }
 
   def askForBoard: ReaderT[P, E, Board] = for {
@@ -59,11 +59,32 @@ class BoardActionHelper[F[_]: Monad]() {
       notObstacle = !obstacles.contains(snake.location.head)
     } yield notWall && notObstacle
 
+    private def eatFoodPresent(location: Location, expiryTime: MoveNumber, moveNumber: MoveNumber): Vector[BoardAction] = {
+      if (location == newSnake.location.head) {
+        Vector(AddFood, GrowSnake)
+      } else if (moveNumber == expiryTime) {
+        Vector(AddFood, AddObstacle)
+      } else {
+        Vector.empty
+      }
+    }
+
+    private def foodAbsent(turns: MoveNumber, moveNumber: MoveNumber): Vector[BoardAction] = {
+      if(turns == moveNumber) {
+        Vector(FoodReady)
+      } else {
+        Vector.empty
+      }
+    }
+
     def execute: Play[Vector[BoardAction]] = for {
       playing <- isPlayingCurrently(newSnake)
       moveNumber <- askForMoveNumber
       food <- inspectState(_.food)
-      newActions = food.eat(newSnake.location.head, moveNumber)
+      newActions = food match {
+        case FoodPresent(location, expiryTime) => eatFoodPresent(location, expiryTime, moveNumber)
+        case FoodAbsent(turns) => foodAbsent(turns, moveNumber)
+      }
       _ <- modifyState(playState => playState.copy(playing = playing, snake = newSnake))
     } yield newActions
   }
