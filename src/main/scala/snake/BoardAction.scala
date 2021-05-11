@@ -1,7 +1,8 @@
 package snake
 
 import cats.Monad
-import cats.data.{ReaderT, State, StateT}
+import cats.data.{ReaderT, StateT}
+import cats.implicits._
 
 class BoardActionHelper[F[_]: Monad]() {
   type E = (Board, MoveNumber)
@@ -18,6 +19,8 @@ class BoardActionHelper[F[_]: Monad]() {
   def inspectState[S](f: PlayState[F] => S): Play[S] = {
     ReaderT.liftF[P, E, S](StateT.inspect(f))
   }
+
+  def modifyStateInF(f: PlayState[F] => F[PlayState[F]]): Play[Unit] = ??? //TODO: implement this lol
 
   def askForBoard: ReaderT[P, E, Board] = for {
     x <- ReaderT.ask[P, E]
@@ -48,7 +51,10 @@ class BoardActionHelper[F[_]: Monad]() {
     def execute: Play[Vector[BoardAction]] = for {
       board <- askForBoard
       moveNumber <- askForMoveNumber
-      _ <- modifyState(playState => playState.copy(food = playState.foodGenerator.apply(moveNumber, playState.snake, board, playState.obstacles)))
+      _ <- modifyStateInF(playState => for {
+        newFood <- playState.foodGenerator.apply(moveNumber, playState.snake, board, playState.obstacles)
+      } yield playState.copy(food = newFood)
+      )
     } yield Vector.empty[BoardAction]
   }
   case class MovedSnake(newSnake: Snake) extends BoardAction {
