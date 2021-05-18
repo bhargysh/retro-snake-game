@@ -20,7 +20,9 @@ class BoardActionHelper[F[_]: Monad]() {
     ReaderT.liftF[P, E, S](StateT.inspect(f))
   }
 
-  def modifyStateInF(f: PlayState[F] => F[PlayState[F]]): Play[Unit] = ??? //TODO: implement this lol
+  def modifyStateInF(f: PlayState[F] => F[PlayState[F]]): Play[Unit] = {
+    ReaderT.liftF[P, E, Unit](StateT.modifyF(f))
+  }
 
   def askForBoard: ReaderT[P, E, Board] = for {
     x <- ReaderT.ask[P, E]
@@ -53,8 +55,7 @@ class BoardActionHelper[F[_]: Monad]() {
       moveNumber <- askForMoveNumber
       _ <- modifyStateInF(playState => for {
         newFood <- playState.foodGenerator.apply(moveNumber, playState.snake, board, playState.obstacles)
-      } yield playState.copy(food = newFood)
-      )
+      } yield playState.copy(food = newFood))
     } yield Vector.empty[BoardAction]
   }
   case class MovedSnake(newSnake: Snake) extends BoardAction {

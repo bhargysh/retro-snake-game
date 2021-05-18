@@ -2,9 +2,9 @@ package snake
 
 import org.specs2.mutable.Specification
 
-import scala.util.Random
-
 class StartTurnSpec extends Specification with BoardActionFixtures {
+  import helper._
+
   "Start turn action" should {
     "returns a moved snake" in {
       val initialLocation = List(Location(8, 8))
@@ -16,7 +16,7 @@ class StartTurnSpec extends Specification with BoardActionFixtures {
         .execute
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
-        .value
+
       val movedSnake: BoardAction = MovedSnake(newSnake)
 
       foodActions should contain(exactly(movedSnake))

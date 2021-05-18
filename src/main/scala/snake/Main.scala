@@ -2,9 +2,8 @@ package snake
 import cats.Monad
 import cats.effect.{ExitCode, IO, IOApp}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
-import org.scalajs.dom.{Node, console, document}
+import org.scalajs.dom.{Node, document}
 
-import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.Random
 
@@ -17,6 +16,7 @@ object Main extends IOApp {
       renderedWorld: Node = html.render(world)
       boardUI <- appendBoardToDocument(renderedWorld)
       renderer <- Renderer(boardUI, html.render, renderedWorld)
+//      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
       gameStep = new GameStep(getInput(boardUI), renderer.renderView)
       _ <- actionOnKeyboardEvent(boardUI)
       _ <- loop[SnakeGameWorld](gameStep.updateGame)(world)
@@ -54,7 +54,6 @@ object Main extends IOApp {
 }
 
 //TODO: extension ideas (obstacles, poisonous food (increase speed, mess with directions), rendering of DOM if we really want to)
-//TODO: insert obstacle to world
 
 // Nothing -> 0 value, doesn't return
 // Unit -> 1 value
