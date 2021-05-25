@@ -53,7 +53,7 @@ object Main extends IOApp {
   }
 }
 
-//TODO: extension ideas (obstacles, poisonous food (increase speed, mess with directions), rendering of DOM if we really want to)
+// extension ideas (obstacles, poisonous food (increase speed, mess with directions), rendering of DOM if we really want to)
 
 // Nothing -> 0 value, doesn't return
 // Unit -> 1 value
