@@ -1,6 +1,6 @@
 package snake
 
-import cats.Id
+import cats.effect.IO
 
 import scala.util.Random
 
@@ -8,9 +8,9 @@ trait FoodGenerator[F[_]] {
   def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): F[FoodPresent]
 }
 
-class RandomFoodGenerator(randomNumberGenerator: Random) extends FoodGenerator[Id] { //TODO: replace with IO
+class RandomFoodGenerator(randomNumberGenerator: Random) extends FoodGenerator[IO] {
 
-  def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): Id[FoodPresent] = {
+  def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): IO[FoodPresent] = IO {
     val notAvailable: Set[Location] = snake.location.toSet ++ obstacles
     val emptyLocations: Set[Location] = board.locations.filter { location =>
       board.cellAt(location) == EmptyCell
