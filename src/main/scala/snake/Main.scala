@@ -9,7 +9,8 @@ import scala.util.Random
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
-    implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
+    val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
+    implicit val boardActionStateReader: BoardActionStateReaderImpl[IO] = new BoardActionStateReaderImpl[IO](foodGenerator)
     for {
       world <- IO.pure(SnakeGameWorld.newSnakeGameWorld)
       html = new SnakeGameHtml(document)
@@ -17,7 +18,7 @@ object Main extends IOApp {
       boardUI <- appendBoardToDocument(renderedWorld)
       renderer <- Renderer(boardUI, html.render, renderedWorld)
 //      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
-      gameStep = new GameStep(getInput(boardUI), renderer.renderView)
+      gameStep = new GameStep(getInput(boardUI), renderer.renderView) //TODO: We want the F to be Reader state not IO
       _ <- actionOnKeyboardEvent(boardUI)
       _ <- loop[SnakeGameWorld](gameStep.updateGame)(world)
     } yield ExitCode.Success

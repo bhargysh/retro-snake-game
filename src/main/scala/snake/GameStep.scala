@@ -1,13 +1,13 @@
 package snake
 
-import cats.Id
-import cats.effect.IO
+import cats.Monad
+import cats.implicits._
 
-class GameStep(getInput: IO[Option[Direction]], renderView: SnakeGameWorld => IO[Unit])(implicit foodGenerator: FoodGenerator[Id]) {
+class GameStep[F[_]: Monad: BoardActionStateReader](getInput: F[Option[Direction]], renderView: SnakeGameWorld => F[Unit]) {
 
-  def updateGame(snakeGameWorld: SnakeGameWorld): IO[Option[SnakeGameWorld]] = for {
+  def updateGame(snakeGameWorld: SnakeGameWorld): F[Option[SnakeGameWorld]] = for {
     maybeDirection <- getInput
-    newSnakeGameWorld = snakeGameWorld.play(maybeDirection)
+    newSnakeGameWorld <- snakeGameWorld.play[F](maybeDirection)
     _ <- renderView(newSnakeGameWorld)
     result = if (newSnakeGameWorld.isPlaying) {
       Some(newSnakeGameWorld)
