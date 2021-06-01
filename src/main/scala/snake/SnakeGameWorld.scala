@@ -5,7 +5,7 @@ import cats.implicits._
 
 import scala.util.Random
 
-case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], obstacleGenerator: ObstacleGenerator) //TODO: foodgenerator on its own, maybe in the reader instead?
+case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], obstacleGenerator: ObstacleGenerator)
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
@@ -25,24 +25,27 @@ case class SnakeGameWorld(snake: Snake,
                           obstacleGenerator: ObstacleGenerator
                          ) {
 
-  def play[F[_]: Monad](direction: Option[Direction])(implicit foodGenerator: FoodGenerator[F]): F[SnakeGameWorld] = { //TODO: work on passing food generator another way...
-    val boardActionHelper = new BoardActionHelper[F]
+  def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F]): F[SnakeGameWorld] = {
+    val actionRunner: ActionRunner[BoardAction, F] = new ActionRunner[BoardAction, F](_.execute[F])
+    for {
+      _ <- actionRunner.go(Vector(StartTurn(direction)))
+      board <- boardActionStateReader.askForBoard
+      moveNumber <- boardActionStateReader.askForMoveNumber
+      newWorld <- boardActionStateReader.inspectState { ps =>
+        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber, ps.obstacleGenerator)
+      }
+    } yield newWorld
 
-    import boardActionHelper._
-
-    val initialPlayState = PlayState[F](isPlaying, food, snake, obstacles, foodGenerator, obstacleGenerator)
-    val actionRunner: ActionRunner[BoardAction, Play] = new ActionRunner[BoardAction, Play](_.execute)
-    val updateGameState: F[SnakeGameWorld] =
-      actionRunner
-        .go(Vector(StartTurn(direction)))
-        .run((board, moveNumber))
+    /*
+    val initialPlayState = PlayState(isPlaying, food, snake, obstacles, obstacleGenerator)
+    .run((board, moveNumber))
         .run(initialPlayState)
         .map {
           case (playState, _) => SnakeGameWorld(
             playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, obstacleGenerator
           )
         }
-    updateGameState
+     */
   }
 
 
