@@ -3,7 +3,7 @@ package snake
 import cats.Monad
 import cats.data.{ReaderT, StateT}
 
-trait BoardActionStateReader[F[_]] extends Monad[F] {
+trait BoardActionStateReader[F[_]] {
 
   def modifyState(f: PlayState => PlayState): F[Unit]
 
@@ -17,7 +17,7 @@ trait BoardActionStateReader[F[_]] extends Monad[F] {
 
 }
 
-class BoardActionStateReaderImpl[F[_]: Monad, G[_]](foodGenerator: FoodGenerator[G])
+class BoardActionStateReaderImpl[F[_]: Monad](foodGenerator: FoodGenerator[F])
   extends BoardActionStateReader[ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), *]] {
 
   type E = (Board, MoveNumber)
@@ -47,13 +47,6 @@ class BoardActionStateReaderImpl[F[_]: Monad, G[_]](foodGenerator: FoodGenerator
     snake <- inspectState(_.snake)
     board <- askForBoard
     obstacles <- inspectState(_.obstacles)
-  } yield foodGenerator.apply(moveNumber, snake, board, obstacles)
-
-  //TODO: worth doing the below...?
-
-  def pure[A](x: A): ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), A] = ???
-
-  def flatMap[A, B](fa: ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), A])(f: A => ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), B]): ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), B] = ???
-
-  def tailRecM[A, B](a: A)(f: A => ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), Either[A, B]]): ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), B] = ???
+    newFood <- ReaderT.liftF[P, E, FoodPresent](StateT.liftF[F, PlayState, FoodPresent](foodGenerator.apply(moveNumber, snake, board, obstacles)))
+  } yield newFood
 }
