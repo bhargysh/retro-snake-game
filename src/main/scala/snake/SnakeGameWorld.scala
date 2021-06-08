@@ -32,7 +32,7 @@ case class SnakeGameWorld(snake: Snake,
       board <- boardActionStateReader.askForBoard
       moveNumber <- boardActionStateReader.askForMoveNumber
       newWorld <- boardActionStateReader.inspectState { ps =>
-        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber, ps.obstacleGenerator)
+        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber + 1, ps.obstacleGenerator)
       }
     } yield newWorld
 

@@ -21,8 +21,8 @@ class BoardActionStateReaderImpl[F[_]: Monad](foodGenerator: FoodGenerator[F])
   extends BoardActionStateReader[ReaderT[StateT[F, PlayState, *], (Board, MoveNumber), *]] {
 
   type E = (Board, MoveNumber)
-  type Play[A] = ReaderT[P, E, A]
   type P[A] = StateT[F, PlayState, A]
+  type Play[A] = ReaderT[P, E, A]
 
   def modifyState(f: PlayState => PlayState): Play[Unit] = {
     ReaderT.liftF[P, E, Unit](StateT.modify[F, PlayState](f))
