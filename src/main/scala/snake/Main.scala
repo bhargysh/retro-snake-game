@@ -1,8 +1,10 @@
 package snake
 import cats.Monad
-import cats.effect.{ExitCode, IO, IOApp}
+import cats.data.{ReaderT, StateT}
+import cats.effect.{ExitCase, ExitCode, IO, IOApp, Sync}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
+import cats.implicits._
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.Random
@@ -11,6 +13,42 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     implicit val boardActionStateReader: BoardActionStateReaderImpl[IO] = new BoardActionStateReaderImpl[IO](foodGenerator)
+    type Play[A] = boardActionStateReader.Play[A] // cool Scala feature, path dependent type
+
+    /*
+    Doesn't look like they ever added an instance for ReaderT
+    cats series 2.x https://github.com/typelevel/cats-effect/blame/1cc8eec66a170e6befca7cf457d6989bc546dba6/kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala
+     */
+
+    implicit def readerTforStuff: Sync[Play] = new Sync[Play] {
+      def suspend[A](thunk: => Play[A]): Play[A] = ReaderT
+        .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), Play[A]](StateT.liftF[IO, PlayState, Play[A]](IO.pure[Play[A]](thunk))).flatMap(identity)
+
+      def bracketCase[A, B](acquire: Play[A])(use: A => Play[B])(release: (A, ExitCase[Throwable]) => Play[Unit]): Play[B] = ???
+
+      def raiseError[A](e: Throwable): Play[A] = ReaderT
+        .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.raiseError(e)))
+
+      def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = for {
+        pOfA <- fa.lower
+        x = pOfA.transformF { y =>
+          y.attempt
+            .map {
+              case Left(e) => f(e)
+              case Right(tuple) => pure(tuple) //TODO: match the types
+            }
+        }
+      } yield ???
+
+      //A -> IO[B], get to StateT IO[B]
+
+      def pure[A](x: A): Play[A] = ReaderT.liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.pure[A](x)))
+
+      def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = ???
+
+      def tailRecM[A, B](a: A)(f: A => Play[Either[A, B]]): Play[B] = ???
+    }
+
     for {
       world <- IO.pure(SnakeGameWorld.newSnakeGameWorld)
       html = new SnakeGameHtml(document)
@@ -46,7 +84,7 @@ object Main extends IOApp {
     })
   }
 
-  private def appendBoardToDocument(renderedWorld: Node): IO[Element] = IO {
+  private def appendBoardToDocument[F[_]: Sync](renderedWorld: Node): F[Element] = Sync[F].delay {
     val boardUI: Element = document.createElement("div")
     document.body.appendChild(boardUI)
     boardUI.appendChild(renderedWorld)
