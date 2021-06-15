@@ -1,6 +1,6 @@
 package snake
-import cats.Monad
-import cats.data.{ReaderT, StateT}
+import cats.{Applicative, ApplicativeError, Monad}
+import cats.data.{IndexedStateT, Kleisli, ReaderT, StateT}
 import cats.effect.{ExitCase, ExitCode, IO, IOApp, Sync}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
@@ -14,6 +14,7 @@ object Main extends IOApp {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     implicit val boardActionStateReader: BoardActionStateReaderImpl[IO] = new BoardActionStateReaderImpl[IO](foodGenerator)
     type Play[A] = boardActionStateReader.Play[A] // cool Scala feature, path dependent type
+    type P[A] = boardActionStateReader.P[A]
 
     /*
     Doesn't look like they ever added an instance for ReaderT
@@ -29,22 +30,16 @@ object Main extends IOApp {
       def raiseError[A](e: Throwable): Play[A] = ReaderT
         .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.raiseError(e)))
 
-      def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = for {
-        pOfA <- fa.lower
-        x = pOfA.transformF { y =>
-          y.attempt
-            .map {
-              case Left(e) => f(e)
-              case Right(tuple) => pure(tuple) //TODO: match the types
-            }
-        }
-      } yield ???
+      def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = Kleisli { e =>
+        val pOfA: boardActionStateReader.P[A] = fa.run(e)
+        ApplicativeError[P, Throwable].handleErrorWith(pOfA)(throwable => f(throwable).run(e))
+      }
 
       //A -> IO[B], get to StateT IO[B]
 
       def pure[A](x: A): Play[A] = ReaderT.liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.pure[A](x)))
 
-      def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = ???
+      def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = ??? //TODO: start here cause easy-ish
 
       def tailRecM[A, B](a: A)(f: A => Play[Either[A, B]]): Play[B] = ???
     }
