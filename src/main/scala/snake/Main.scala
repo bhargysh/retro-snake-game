@@ -1,7 +1,7 @@
 package snake
-import cats.{Applicative, ApplicativeError, Monad}
+import cats.{ApplicativeError, Monad}
 import cats.data.{IndexedStateT, Kleisli, ReaderT, StateT}
-import cats.effect.{ExitCase, ExitCode, IO, IOApp, Sync}
+import cats.effect.{Bracket, ExitCase, ExitCode, IO, IOApp, Sync}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
 import cats.implicits._
@@ -16,16 +16,13 @@ object Main extends IOApp {
     type Play[A] = boardActionStateReader.Play[A] // cool Scala feature, path dependent type
     type P[A] = boardActionStateReader.P[A]
 
-    /*
-    Doesn't look like they ever added an instance for ReaderT
-    cats series 2.x https://github.com/typelevel/cats-effect/blame/1cc8eec66a170e6befca7cf457d6989bc546dba6/kernel/shared/src/main/scala/cats/effect/kernel/Sync.scala
-     */
-
     implicit def readerTforStuff: Sync[Play] = new Sync[Play] {
       def suspend[A](thunk: => Play[A]): Play[A] = ReaderT
         .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), Play[A]](StateT.liftF[IO, PlayState, Play[A]](IO.pure[Play[A]](thunk))).flatMap(identity)
 
-      def bracketCase[A, B](acquire: Play[A])(use: A => Play[B])(release: (A, ExitCase[Throwable]) => Play[Unit]): Play[B] = ???
+      def bracketCase[A, B](acquire: Play[A])(use: A => Play[B])(release: (A, ExitCase[Throwable]) => Play[Unit]): Play[B] = {
+        Bracket.catsKleisliBracket[P, (Board, MoveNumber), Throwable](Sync[P]).bracketCase(acquire)(use)(release)
+      }
 
       def raiseError[A](e: Throwable): Play[A] = ReaderT
         .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.raiseError(e)))
@@ -39,13 +36,15 @@ object Main extends IOApp {
 
       def pure[A](x: A): Play[A] = ReaderT.liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.pure[A](x)))
 
-      def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = ??? //TODO: start here cause easy-ish
+      def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = fa.flatMap(f)
 
-      def tailRecM[A, B](a: A)(f: A => Play[Either[A, B]]): Play[B] = ???
+      def tailRecM[A, B](a: A)(f: A => Play[Either[A, B]]): Play[B] = {
+        Kleisli.catsDataMonadForKleisli[P, (Board, MoveNumber)](IndexedStateT.catsDataMonadForIndexedStateT[IO, PlayState](Monad[IO])).tailRecM(a)(f)
+      }
     }
 
     for {
-      world <- IO.pure(SnakeGameWorld.newSnakeGameWorld)
+      world <- IO.pure(SnakeGameWorld.newSnakeGameWorld) // TODO: for yield uses IO and Play, fix it
       html = new SnakeGameHtml(document)
       renderedWorld: Node = html.render(world)
       boardUI <- appendBoardToDocument(renderedWorld)
