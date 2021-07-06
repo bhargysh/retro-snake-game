@@ -1,5 +1,6 @@
 package snake
-import cats.{ApplicativeError, Monad}
+import cats.arrow.FunctionK
+import cats.{ApplicativeError, Monad, ~>}
 import cats.data.{IndexedStateT, Kleisli, ReaderT, StateT}
 import cats.effect.{Bracket, ExitCase, ExitCode, IO, IOApp, Sync}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
@@ -12,6 +13,7 @@ import scala.util.Random
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
+    val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
     implicit val boardActionStateReader: BoardActionStateReaderImpl[IO] = new BoardActionStateReaderImpl[IO](foodGenerator)
     type Play[A] = boardActionStateReader.Play[A] // cool Scala feature, path dependent type
     type P[A] = boardActionStateReader.P[A]
@@ -43,28 +45,45 @@ object Main extends IOApp {
       }
     }
 
-    for {
-      world <- IO.pure(SnakeGameWorld.newSnakeGameWorld) // TODO: for yield uses IO and Play, fix it
+    val liftPlay = new FunctionK[IO, Play] {
+      def apply[A](fa: IO[A]): Play[A] = ReaderT
+        .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](fa))
+    }
+
+    val playExit = for {
+      world <- Sync[Play].pure(SnakeGameWorld.newSnakeGameWorld)
       html = new SnakeGameHtml(document)
       renderedWorld: Node = html.render(world)
-      boardUI <- appendBoardToDocument(renderedWorld)
-      renderer <- Renderer(boardUI, html.render, renderedWorld)
+      boardUI <- appendBoardToDocument[Play](renderedWorld)
+      renderer <- Renderer[Play](boardUI, html.render, renderedWorld)
 //      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
-      gameStep = new GameStep(getInput(boardUI), renderer.renderView) //TODO: We want the F to be Reader state not IO
-      _ <- actionOnKeyboardEvent(boardUI)
-      _ <- loop[SnakeGameWorld](gameStep.updateGame)(world)
+      gameStep = new GameStep[Play](getInput(boardUI), renderer.renderView)
+      _ <- liftPlay(actionOnKeyboardEvent(boardUI))
+      _ <- loop[SnakeGameWorld, Play](gameStep.updateGame, liftPlay)(world)
     } yield ExitCode.Success
+
+    val initialPlayState = PlayState(
+      playing = SnakeGameWorld.isPlaying,
+      food = SnakeGameWorld.food,
+      snake = SnakeGameWorld.newSnakeGameWorld.snake,
+      obstacles = SnakeGameWorld.obstacles,
+      obstacleGenerator = obstacleGenerator
+    )
+
+    playExit
+      .run((SnakeGameWorld.board, SnakeGameWorld.newSnakeGameWorld.moveNumber))
+      .runA(initialPlayState)
   }
 
-  private def loop[A](work: A => IO[Option[A]])(old: A): IO[Unit] = Monad[IO].tailRecM(old) { old =>
+  private def loop[A, F[_]: Monad](work: A => F[Option[A]], lift: IO ~> F)(old: A): F[Unit] = Monad[F].tailRecM(old) { old =>
     for {
-      _ <- timer.sleep(Duration(1, SECONDS))
+      _ <- lift(timer.sleep(Duration(1, SECONDS)))
       newRenderedNode <- work(old)
     } yield newRenderedNode.toLeft(())
   }
 
-  private def getInput(boardUI: Element): IO[Option[Direction]] = for {
-    maybeDirectionData <- IO(Option(boardUI.getAttribute("data-direction")))
+  private def getInput[F[_]: Sync](boardUI: Element): F[Option[Direction]] = for {
+    maybeDirectionData <- Sync[F].delay(Option(boardUI.getAttribute("data-direction")))
     maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
   } yield maybeDirection
 
