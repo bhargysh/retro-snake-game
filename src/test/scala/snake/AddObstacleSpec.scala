@@ -5,7 +5,6 @@ import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 
 class AddObstacleSpec extends Specification with ScalaCheck with BoardActionFixtures {
-  import helper._
 
   "Add obstacle" should {
     "modify obstacle state" >> prop { (food: Food, obstacles: Set[Location]) =>

@@ -3,8 +3,6 @@ package snake
 import org.specs2.mutable.Specification
 
 class MovedSnakeSpec extends Specification with BoardActionFixtures {
-  import helper._
-
   "MovedSnake action" should {
     val initialLocation = List(Location(8, 8), Location(2, 4))
     val snake = Snake(initialLocation, 3, Up)
@@ -14,6 +12,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
       val (playState, foodActions) = MovedSnake(newSnake).execute
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
+        .unsafeRunSync()
 
       playState.playing should beFalse
       foodActions should beEmpty
@@ -25,6 +24,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
       val (playState, foodActions) = MovedSnake(newSnake).execute
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
+        .unsafeRunSync()
 
       playState.snake shouldEqual newSnake
       foodActions should beEmpty
@@ -38,6 +38,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
         val (_, boardActions) = MovedSnake(newSnake).execute
           .run(SnakeGameWorld.board, MoveNumber(9))
           .run(initialState)
+          .unsafeRunSync()
 
         boardActions should contain(AddFood, GrowSnake)
       }
@@ -48,6 +49,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
         val (_, boardActions) = MovedSnake(newSnake).execute
           .run(SnakeGameWorld.board, MoveNumber(10))
           .run(initialState)
+          .unsafeRunSync()
 
         boardActions should contain(AddFood, AddObstacle)
       }
@@ -59,6 +61,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
         val (_, boardActions) = MovedSnake(newSnake).execute
           .run(SnakeGameWorld.board, MoveNumber(12))
           .run(initialState)
+          .unsafeRunSync()
 
         boardActions should beEmpty
       }
@@ -72,6 +75,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
         val (_, boardActions) = MovedSnake(newSnake).execute
           .run(SnakeGameWorld.board, MoveNumber(4))
           .run(initialState)
+          .unsafeRunSync()
 
         boardActions should contain(FoodReady)
       }
@@ -83,6 +87,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
         val (_, boardActions) = MovedSnake(newSnake).execute
           .run(SnakeGameWorld.board, MoveNumber(3))
           .run(initialState)
+          .unsafeRunSync()
 
         boardActions should beEmpty
       }
@@ -99,6 +104,7 @@ class MovedSnakeSpec extends Specification with BoardActionFixtures {
       val (playState, boardActions) = MovedSnake(newSnake).execute
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
+        .unsafeRunSync()
 
       playState.playing mustEqual false
       boardActions must beEmpty

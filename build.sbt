@@ -19,6 +19,7 @@ libraryDependencies ++= Seq(
   "org.typelevel" %%% "cats-core" % "2.1.1",
   "org.typelevel" %%% "cats-effect" % "2.1.4",
   "org.specs2"   %%% "specs2-core" % specs2Version % Test,
+  "org.specs2"   %%% "specs2-cats" % specs2Version % Test,
   "org.specs2"   %%% "specs2-scalacheck" % specs2Version % Test,
   "com.lihaoyi"  %%% "utest" % "0.7.4" % Test,
   "org.scala-js" %%% "scalajs-dom" % "1.0.0",

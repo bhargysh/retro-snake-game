@@ -5,12 +5,8 @@ import org.specs2.mutable.Specification
 
 import scala.util.Random
 
-class SnakeGameWorldSpec extends Specification {
+class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
   "play" should {
-    implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
-    val boardActionHelper = new BoardActionHelper[Id]
-    import boardActionHelper._
-
     "return a new SnakeGameWorld" in {
       val modifiedSnake = Snake(
         List(Location(2, 1), Location(2, 2)),
@@ -32,7 +28,12 @@ class SnakeGameWorldSpec extends Specification {
         MoveNumber(1),
         (food: Food, snake: Snake, board: Board, obstacles: Set[Location]) => ???
       )
-      val updatedSNG: Id[SnakeGameWorld] = initialSNG.play(direction = Some(Up))
+      val updatedSNG =
+        initialSNG.play(direction = Some(Up))
+          .run(initialSNG.board, initialSNG.moveNumber)
+          .run(initialPlayState)
+          .unsafeRunSync()
+          ._2
 
       updatedSNG.moveNumber shouldEqual MoveNumber(2) //TODO: what should this test be testing?
     }

@@ -1,5 +1,6 @@
 package snake
 
+import cats.effect.IO
 import org.scalajs.dom.raw.Element
 import org.specs2.mutable.Specification
 import org.scalajs.dom.{Node, document}
@@ -11,7 +12,7 @@ class RendererSpec extends Specification {
       val boardUI: Element = document.createElement("div")
       val expectedWorld: Node = document.createElement("div")
       val initialRenderedWorld = document.createElement("div")
-      val ioRenderer = Renderer(boardUI, _ => expectedWorld, initialRenderedWorld)
+      val ioRenderer = Renderer[IO](boardUI, _ => expectedWorld, initialRenderedWorld)
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
 
       boardUI.appendChild(initialRenderedWorld)
@@ -31,7 +32,7 @@ class RendererSpec extends Specification {
         renderResults.next()
       }
 
-      val ioRenderer = Renderer(boardUI, testRender, initialRenderedWorld)
+      val ioRenderer = Renderer[IO](boardUI, testRender, initialRenderedWorld)
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
 
       boardUI.appendChild(initialRenderedWorld)

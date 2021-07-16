@@ -3,7 +3,6 @@ package snake
 import org.specs2.mutable.Specification
 
 class StartTurnSpec extends Specification with BoardActionFixtures {
-  import helper._
 
   "Start turn action" should {
     "returns a moved snake" in {
@@ -16,6 +15,7 @@ class StartTurnSpec extends Specification with BoardActionFixtures {
         .execute
         .run(SnakeGameWorld.board, MoveNumber(9))
         .run(initialState)
+        .unsafeRunSync()
 
       val movedSnake: BoardAction = MovedSnake(newSnake)
 

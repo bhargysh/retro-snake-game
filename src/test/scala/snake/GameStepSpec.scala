@@ -2,11 +2,12 @@ package snake
 
 import cats.effect.IO
 import cats.effect.concurrent.Ref
+import cats.implicits._
 import org.specs2.mutable.Specification
 
 import scala.util.Random
 
-class GameStepSpec extends Specification {
+class GameStepSpec extends Specification with BoardActionFixtures {
   "updateGame" should {
     implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     "return new SnakeGameWorld when game is continuing" in {
@@ -35,11 +36,14 @@ class GameStepSpec extends Specification {
       gameStep.updateGame(immovableSnakeGameWorld).unsafeRunSync() shouldEqual None
     }
 
-    "pass direction input to produce new SnakeGameWorld" in {
-      val direction = IO(Some(Left))
+    "pass direction input to produce new SnakeGameWorld" in { //TODO: fix this and think about is this easier to test .run.run.unsaferunsync errywhere
+      val direction: Option[Direction] = Some(Left)
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
-      val gameStep = new GameStep(direction, _ => IO.unit)
-      gameStep.updateGame(snakeGameWorld).unsafeRunSync() should beLike[Option[SnakeGameWorld]] { case actualSnakeGameWorld =>
+      val gameStep = new GameStep[Play](direction.pure[Play], _ => ().pure[Play])
+      gameStep.updateGame(snakeGameWorld)
+        .run(SnakeGameWorld.board, MoveNumber(0))
+        .runA(initialPlayState)
+        .unsafeRunSync() should beLike[Option[SnakeGameWorld]] { case actualSnakeGameWorld =>
         actualSnakeGameWorld.map(_.snake.direction) should beSome(Left)
       }
     }
