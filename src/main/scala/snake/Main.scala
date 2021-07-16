@@ -14,36 +14,7 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
-    implicit val boardActionStateReader: BoardActionStateReaderImpl[IO] = new BoardActionStateReaderImpl[IO](foodGenerator)
-    type Play[A] = boardActionStateReader.Play[A] // cool Scala feature, path dependent type
-    type P[A] = boardActionStateReader.P[A]
-
-    implicit def readerTforStuff: Sync[Play] = new Sync[Play] {
-      def suspend[A](thunk: => Play[A]): Play[A] = ReaderT
-        .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), Play[A]](StateT.liftF[IO, PlayState, Play[A]](IO.pure[Play[A]](thunk))).flatMap(identity)
-
-      def bracketCase[A, B](acquire: Play[A])(use: A => Play[B])(release: (A, ExitCase[Throwable]) => Play[Unit]): Play[B] = {
-        Bracket.catsKleisliBracket[P, (Board, MoveNumber), Throwable](Sync[P]).bracketCase(acquire)(use)(release)
-      }
-
-      def raiseError[A](e: Throwable): Play[A] = ReaderT
-        .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.raiseError(e)))
-
-      def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = Kleisli { e =>
-        val pOfA: boardActionStateReader.P[A] = fa.run(e)
-        ApplicativeError[P, Throwable].handleErrorWith(pOfA)(throwable => f(throwable).run(e))
-      }
-
-      //A -> IO[B], get to StateT IO[B]
-
-      def pure[A](x: A): Play[A] = ReaderT.liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.pure[A](x)))
-
-      def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = fa.flatMap(f)
-
-      def tailRecM[A, B](a: A)(f: A => Play[Either[A, B]]): Play[B] = {
-        Kleisli.catsDataMonadForKleisli[P, (Board, MoveNumber)](IndexedStateT.catsDataMonadForIndexedStateT[IO, PlayState](Monad[IO])).tailRecM(a)(f)
-      }
-    }
+    implicit val boardActionStateReader: BoardActionStateReaderImpl = new BoardActionStateReaderImpl(foodGenerator)
 
     val liftPlay = new FunctionK[IO, Play] {
       def apply[A](fa: IO[A]): Play[A] = ReaderT
