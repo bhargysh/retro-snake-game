@@ -1,8 +1,8 @@
 package snake
 
-import snake.Generators._
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
+import snake.Generators._
 
 class AddObstacleSpec extends Specification with ScalaCheck with BoardActionFixtures {
 
@@ -12,6 +12,7 @@ class AddObstacleSpec extends Specification with ScalaCheck with BoardActionFixt
       val (playState, boardActions) = AddObstacle.execute
         .run(SnakeGameWorld.board, MoveNumber(2))
         .run(initialState)
+        .unsafeRunSync()
 
       playState.obstacles should haveLength(initialState.obstacles.size + 1)
       playState.obstacles should containAllOf(obstacles.toSeq)

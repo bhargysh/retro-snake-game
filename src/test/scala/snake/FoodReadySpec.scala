@@ -1,23 +1,18 @@
 package snake
 
-import cats.Id
+import cats.effect.IO
 import org.specs2.mutable.Specification
 
 class FoodReadySpec extends Specification with BoardActionFixtures {
-  import helper._
+  override def foodGenerator(): FoodGenerator[IO] = (moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]) => IO(FoodPresent(Location(2,3), MoveNumber(10)))
 
   "FoodReady action" should {
     "modify food to be randomly generated in PlayState" in {
-      val foodGenerator = new FoodGenerator[Id] {
-        def apply(moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]): FoodPresent =
-          FoodPresent(Location(2,3), MoveNumber(10))
-      }
-
-      val initialState = initialPlayState.copy(foodGenerator = foodGenerator)
 
       val (playState, foodActions) = FoodReady.execute
         .run(SnakeGameWorld.board, MoveNumber(9))
-        .run(initialState)
+        .run(initialPlayState)
+        .unsafeRunSync()
 
       playState.food shouldEqual FoodPresent(Location(2,3), MoveNumber(10))
       foodActions should beEmpty
