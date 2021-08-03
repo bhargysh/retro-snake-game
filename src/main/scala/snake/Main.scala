@@ -28,8 +28,9 @@ object Main extends IOApp {
       boardUI <- appendBoardToDocument[Play](renderedWorld)
       renderer <- Renderer[Play](boardUI, html.render, renderedWorld)
 //      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
-      gameStep = new GameStep[Play](getInput(boardUI), renderer.renderView)
       _ <- liftPlay(actionOnKeyboardEvent(boardUI))
+      gameStep = new GameStep[Play](getInput(boardUI), renderer.renderView)
+//      _ <- liftPlay(actionOnKeyboardEvent(boardUI))
       _ <- loop[SnakeGameWorld, Play](gameStep.updateGame, liftPlay)(world)
     } yield ExitCode.Success
 
@@ -54,13 +55,19 @@ object Main extends IOApp {
   }
 
   private def getInput[F[_]: Sync](boardUI: Element): F[Option[Direction]] = for {
-    maybeDirectionData <- Sync[F].delay(Option(boardUI.getAttribute("data-direction")))
+//    _ <- Sync[F].delay(println(s"Direction attribute ${boardUI.getAttribute("data-direction")}"))
+    maybeDirectionData <- Sync[F].delay {
+      println(s"Direction attribute ${boardUI.getAttribute("data-direction")}")
+      Option(boardUI.getAttribute("data-direction"))
+    }
     maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
+    _ <- Sync[F].delay(println("hiiiii", maybeDirection))
   } yield maybeDirection
 
   private def actionOnKeyboardEvent(boardUI: Element): IO[Unit] = IO {
     document.addEventListener("keydown", (event: KeyboardEvent) => {
       val maybeDirection = Keyboard.stringToDirection(event.key)
+      println(s"action keyboard: $maybeDirection")
       maybeDirection match {
         case Some(value) => boardUI.setAttribute("data-direction", value.toString)
         case None => None

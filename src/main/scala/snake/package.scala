@@ -16,7 +16,7 @@ package object snake { //want something at top level, cannot usefully define it 
   implicit def readerTforStuff: Sync[Play] = new Sync[Play] {
 
     def suspend[A](thunk: => Play[A]): Play[A] = ReaderT
-      .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), Play[A]](StateT.liftF[IO, PlayState, Play[A]](IO.pure[Play[A]](thunk))).flatMap(identity)
+      .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), Play[A]](StateT.liftF[IO, PlayState, Play[A]](IO.suspend(IO[Play[A]](thunk)))).flatMap(identity)
 
     def bracketCase[A, B](acquire: Play[A])(use: A => Play[B])(release: (A, ExitCase[Throwable]) => Play[Unit]): Play[B] = {
       Bracket.catsKleisliBracket[P, (Board, MoveNumber), Throwable](Sync[P]).bracketCase(acquire)(use)(release)

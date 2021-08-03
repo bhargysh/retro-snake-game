@@ -3,8 +3,6 @@ package snake
 import cats.Monad
 import cats.implicits._
 
-//TODO: run the tests and fix them
-
 sealed trait BoardAction {
   def execute[F[_]: Monad](implicit F: BoardActionStateReader[F]): F[Vector[BoardAction]]
 }

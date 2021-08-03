@@ -8,7 +8,8 @@ import org.specs2.mutable.Specification
 class GameStepSpec extends Specification with BoardActionFixtures {
 
   "updateGame" should {
-    implicit val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
+    def getDirection(direction: Option[Direction]): Play[Option[Direction]] = direction.pure[Play]
+
     "return new SnakeGameWorld when game is continuing" in {
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
       def renderView(ref: Ref[Play, Boolean])(snakeGameWorld: SnakeGameWorld): Play[Unit] = {
@@ -38,7 +39,7 @@ class GameStepSpec extends Specification with BoardActionFixtures {
       val gameStep = new GameStep(none.pure[Play], _ => ().pure[Play])
       gameStep.updateGame(immovableSnakeGameWorld)
         .run(SnakeGameWorld.board, MoveNumber(0))
-        .runA(initialPlayState)
+        .runA(initialPlayState.copy(snake = snake))
         .unsafeRunSync() shouldEqual None
     }
 
