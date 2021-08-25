@@ -25,9 +25,9 @@ package object snake { //want something at top level, cannot usefully define it 
     def raiseError[A](e: Throwable): Play[A] = ReaderT
       .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](IO.raiseError(e)))
 
-    def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = Kleisli { e =>
-      val pOfA = fa.run(e)
-      ApplicativeError[P, Throwable].handleErrorWith(pOfA)(throwable => f(throwable).run(e))
+    def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = Kleisli { env: (Board, MoveNumber) =>
+      val pOfA: P[A] = fa.run(env)
+      ApplicativeError[P, Throwable].handleErrorWith(pOfA)(throwable => f(throwable).run(env))
     }
 
     //A -> IO[B], get to StateT IO[B]

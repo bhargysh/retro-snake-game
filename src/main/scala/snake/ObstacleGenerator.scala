@@ -22,4 +22,6 @@ class RandomObstacleGenerator(randomNumberGenerator: Random) extends ObstacleGen
     val position = randomNumberGenerator.nextInt(availableLocations.size)
     availableLocations(position)
   }
+
+  override def equals(obj: Any): Boolean = obj.getClass == this.getClass // TODO: this is to test SyncLaws remove this later
 }

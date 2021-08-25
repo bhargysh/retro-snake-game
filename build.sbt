@@ -30,6 +30,8 @@ libraryDependencies ++= Seq(
   "org.scala-js" %%% "scalajs-dom" % "1.0.0",
 )
 
+npmDependencies in Compile += "source-map-support" -> "0.5.19"
+
 addCompilerPlugin("org.typelevel" % "kind-projector" % "0.11.3" cross CrossVersion.full)
 
 requireJsDomEnv in Test := true
