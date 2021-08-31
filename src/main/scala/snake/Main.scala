@@ -29,8 +29,12 @@ object Main extends IOApp {
       renderer <- Renderer[Play](boardUI, html.render, renderedWorld)
 //      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
       _ <- liftPlay(actionOnKeyboardEvent(boardUI))
-      gameStep = new GameStep[Play](getInput(boardUI), renderer.renderView)
-//      _ <- liftPlay(actionOnKeyboardEvent(boardUI))
+      gameStep =
+        new GameStep[Play](
+          getInput(boardUI),
+          renderer.renderView,
+          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(obstacleGenerator)(sng.play[Play](maybeDirection))
+        )
       _ <- loop[SnakeGameWorld, Play](gameStep.updateGame, liftPlay)(world)
     } yield ExitCode.Success
 
@@ -47,27 +51,40 @@ object Main extends IOApp {
       .runA(initialPlayState)
   }
 
-  private def loop[A, F[_]: Monad](work: A => F[Option[A]], lift: IO ~> F)(old: A): F[Unit] = Monad[F].tailRecM(old) { old =>
+  def toGameState(obstacleGenerator: ObstacleGenerator)(play: Play[SnakeGameWorld]): Game[SnakeGameWorld] = {
+    StateT.modifyF { (oldSNG: SnakeGameWorld) =>
+      val ps = PlayState(
+        playing = oldSNG.isPlaying,
+        food = oldSNG.food,
+        snake = oldSNG.snake,
+        obstacles = oldSNG.obstacles,
+        obstacleGenerator = obstacleGenerator
+      )
+      play
+        .run((oldSNG.board, oldSNG.moveNumber))
+        .runA(ps)
+    }.get
+  }
+
+  private def loop[A, F[_]: Monad](work: A => F[Option[A]], lift: IO ~> F)(initial: A): F[Unit] = Monad[F].tailRecM(initial) { old =>
     for {
       _ <- lift(timer.sleep(Duration(1, SECONDS)))
-      newRenderedNode <- work(old)
-    } yield newRenderedNode.toLeft(())
+      sng = old.asInstanceOf[SnakeGameWorld]
+      _ = println(s"LOOP move: ${sng.moveNumber}") //TODO: why is move number always 1 :(
+      optionNew <- work(old)
+    } yield optionNew.toLeft(())
   }
 
   private def getInput[F[_]: Sync](boardUI: Element): F[Option[Direction]] = for {
-//    _ <- Sync[F].delay(println(s"Direction attribute ${boardUI.getAttribute("data-direction")}"))
     maybeDirectionData <- Sync[F].delay {
-      println(s"Direction attribute ${boardUI.getAttribute("data-direction")}")
       Option(boardUI.getAttribute("data-direction"))
     }
     maybeDirection = maybeDirectionData.flatMap(Direction.fromStr)
-    _ <- Sync[F].delay(println("hiiiii", maybeDirection))
   } yield maybeDirection
 
   private def actionOnKeyboardEvent(boardUI: Element): IO[Unit] = IO {
     document.addEventListener("keydown", (event: KeyboardEvent) => {
       val maybeDirection = Keyboard.stringToDirection(event.key)
-      println(s"action keyboard: $maybeDirection")
       maybeDirection match {
         case Some(value) => boardUI.setAttribute("data-direction", value.toString)
         case None => None

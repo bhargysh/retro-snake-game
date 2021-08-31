@@ -5,7 +5,7 @@ import cats.implicits._
 
 import scala.util.Random
 
-case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], obstacleGenerator: ObstacleGenerator)
+case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], obstacleGenerator: ObstacleGenerator) //TODO: rename to TurnState
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
