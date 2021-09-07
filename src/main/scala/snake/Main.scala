@@ -1,11 +1,11 @@
 package snake
 import cats.arrow.FunctionK
-import cats.{ApplicativeError, Monad, ~>}
-import cats.data.{IndexedStateT, Kleisli, ReaderT, StateT}
-import cats.effect.{Bracket, ExitCase, ExitCode, IO, IOApp, Sync}
+import cats.data.StateT
+import cats.effect.{ExitCode, IO, IOApp, Sync}
+import cats.implicits._
+import cats.{Monad, ~>}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
-import cats.implicits._
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.Random
@@ -16,39 +16,29 @@ object Main extends IOApp {
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
     implicit val boardActionStateReader: BoardActionStateReaderImpl = new BoardActionStateReaderImpl(foodGenerator)
 
-    val liftPlay = new FunctionK[IO, Play] {
-      def apply[A](fa: IO[A]): Play[A] = ReaderT
-        .liftF[StateT[IO, PlayState, *], (Board, MoveNumber), A](StateT.liftF[IO, PlayState, A](fa))
+    val liftGame = new FunctionK[IO, Game] {
+      def apply[A](fa: IO[A]): Game[A] = StateT.liftF[IO, SnakeGameWorld, A](fa)
     }
 
-    val playExit = for {
-      world <- Sync[Play].pure(SnakeGameWorld.newSnakeGameWorld)
+    val playExit: Game[ExitCode] = for {
+      world <- StateT.get[IO, SnakeGameWorld]
       html = new SnakeGameHtml(document)
       renderedWorld: Node = html.render(world)
-      boardUI <- appendBoardToDocument[Play](renderedWorld)
-      renderer <- Renderer[Play](boardUI, html.render, renderedWorld)
+      boardUI <- appendBoardToDocument[Game](renderedWorld)
+      renderer <- Renderer[Game](boardUI, html.render, renderedWorld)
 //      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
-      _ <- liftPlay(actionOnKeyboardEvent(boardUI))
+      _ <- liftGame(actionOnKeyboardEvent(boardUI))
       gameStep =
-        new GameStep[Play](
-          getInput(boardUI),
+        new GameStep[Game](
+          getInput[Game](boardUI),
           renderer.renderView,
           (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(obstacleGenerator)(sng.play[Play](maybeDirection))
         )
-      _ <- loop[SnakeGameWorld, Play](gameStep.updateGame, liftPlay)(world)
+      _ <- loop[SnakeGameWorld, Game](gameStep.updateGame, liftGame)(world)
     } yield ExitCode.Success
 
-    val initialPlayState = PlayState(
-      playing = SnakeGameWorld.isPlaying,
-      food = SnakeGameWorld.food,
-      snake = SnakeGameWorld.newSnakeGameWorld.snake,
-      obstacles = SnakeGameWorld.obstacles,
-      obstacleGenerator = obstacleGenerator
-    )
-
     playExit
-      .run((SnakeGameWorld.board, SnakeGameWorld.newSnakeGameWorld.moveNumber))
-      .runA(initialPlayState)
+      .runA(SnakeGameWorld.newSnakeGameWorld)
   }
 
   def toGameState(obstacleGenerator: ObstacleGenerator)(play: Play[SnakeGameWorld]): Game[SnakeGameWorld] = {
@@ -66,13 +56,12 @@ object Main extends IOApp {
     }.get
   }
 
-  private def loop[A, F[_]: Monad](work: A => F[Option[A]], lift: IO ~> F)(initial: A): F[Unit] = Monad[F].tailRecM(initial) { old =>
-    for {
-      _ <- lift(timer.sleep(Duration(1, SECONDS)))
-      sng = old.asInstanceOf[SnakeGameWorld]
-      _ = println(s"LOOP move: ${sng.moveNumber}") //TODO: why is move number always 1 :(
-      optionNew <- work(old)
-    } yield optionNew.toLeft(())
+  private def loop[A, F[_]: Monad](work: A => F[Option[A]], lift: IO ~> F)(initial: A): F[Unit] =
+    Monad[F].tailRecM(initial) { old =>
+      for {
+        _ <- lift(timer.sleep(Duration(1, SECONDS)))
+        optionNew <- work(old)
+      } yield optionNew.toLeft(())
   }
 
   private def getInput[F[_]: Sync](boardUI: Element): F[Option[Direction]] = for {
