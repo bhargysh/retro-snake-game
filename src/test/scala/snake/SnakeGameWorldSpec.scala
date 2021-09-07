@@ -25,8 +25,7 @@ class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
         SnakeGameWorld.board,
         SnakeGameWorld.food,
         isPlaying = true,
-        MoveNumber(1),
-        (food: Food, snake: Snake, board: Board, obstacles: Set[Location]) => ???
+        MoveNumber(1)
       )
       val updatedSNG =
         initialSNG.play(direction = Some(Up))

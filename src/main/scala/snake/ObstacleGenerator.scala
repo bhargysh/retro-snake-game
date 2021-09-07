@@ -1,14 +1,16 @@
 package snake
 
+import cats.effect.IO
+
 import scala.util.Random
 
-trait ObstacleGenerator {
-  def apply(food: Food, snake: Snake, board: Board, obstacles: Set[Location]): Location
+trait ObstacleGenerator[F[_]] {
+  def apply(food: Food, snake: Snake, board: Board, obstacles: Set[Location]): IO[Location]
 }
 
 
-class RandomObstacleGenerator(randomNumberGenerator: Random) extends ObstacleGenerator {
-  def apply(food: Food, snake: Snake, board: Board, obstacles: Set[Location]): Location = {
+class RandomObstacleGenerator(randomNumberGenerator: Random) extends ObstacleGenerator[IO] {
+  def apply(food: Food, snake: Snake, board: Board, obstacles: Set[Location]): IO[Location] = IO {
     val snakeLocation: Set[Location] = snake.location.toSet
     val emptyLocations: Set[Location] = board.locations.filter { location =>
       board.cellAt(location) == EmptyCell

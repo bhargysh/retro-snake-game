@@ -3,12 +3,14 @@ package snake
 import org.specs2.ScalaCheck
 import org.specs2.mutable.Specification
 import Generators._
+import cats.effect.IO
 import org.scalacheck.{Arbitrary, Gen}
+import org.specs2.matcher.IOMatchers
 import org.specs2.scalacheck.Parameters
 
 import scala.util.Random
 
-class RandomObstacleGeneratorSpec extends Specification with ScalaCheck {
+class RandomObstacleGeneratorSpec extends Specification with ScalaCheck with IOMatchers {
   "Random obstacle generator" should {
     implicit val snakeArb = Arbitrary(Generators.snakeGen)
 
@@ -22,11 +24,13 @@ class RandomObstacleGeneratorSpec extends Specification with ScalaCheck {
 
     "generate obstacle that is not on the snake, food or wall" >> prop { (snake: Snake, food: FoodPresent, board: Board, obstacles: Set[Location]) =>
       val obstacleGenerator = new RandomObstacleGenerator(new Random)
-      val result: Location = obstacleGenerator.apply(food, snake, board, obstacles)
-      snake.location should not(contain(result))
-      result shouldNotEqual food.location
-      board.cellAt(result) shouldEqual EmptyCell
-      obstacles should not(contain(result))
+      val ioResult: IO[Location] = obstacleGenerator.apply(food, snake, board, obstacles)
+      ioResult should returnValue { result: Location =>
+        snake.location should not(contain(result))
+        result shouldNotEqual food.location
+        board.cellAt(result) shouldEqual EmptyCell
+        obstacles should not(contain(result))
+      }
     }.setParameters(Parameters(minTestsOk = 400))
   }
 }

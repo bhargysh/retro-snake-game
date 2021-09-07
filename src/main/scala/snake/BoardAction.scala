@@ -67,17 +67,16 @@ case object FoodReady extends BoardAction {
   }
 
 case class StartTurn(direction: Option[Direction]) extends BoardAction {
-  def execute[F[_]: Monad](implicit F: BoardActionStateReader[F]) = for {
+  def execute[F[_]: Monad](implicit F: BoardActionStateReader[F]): F[Vector[BoardAction]] = for {
     oldSnake <- F.inspectState(_.snake)
     movedSnake = oldSnake.move(direction)
   } yield Vector(MovedSnake(movedSnake))
 }
 
-case object AddObstacle extends BoardAction { //add obstalce if they miss food
-  def execute[F[_]: Monad](implicit F: BoardActionStateReader[F]) = for {
-    board <- F.askForBoard
+case object AddObstacle extends BoardAction {
+  def execute[F[_]: Monad](implicit F: BoardActionStateReader[F]): F[Vector[BoardAction]] = for {
+    newObstacle <- F.generateObstacle
     _ <- F.modifyState { playState =>
-      val newObstacle = playState.obstacleGenerator.apply(playState.food, playState.snake, board, playState.obstacles)
       playState.copy(obstacles = playState.obstacles ++ Set(newObstacle))
     }
   } yield Vector.empty[BoardAction]

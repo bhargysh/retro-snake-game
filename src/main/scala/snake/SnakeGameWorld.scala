@@ -3,9 +3,7 @@ package snake
 import cats.Monad
 import cats.implicits._
 
-import scala.util.Random
-
-case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location], obstacleGenerator: ObstacleGenerator) //TODO: rename to TurnState
+case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location]) //TODO: rename to TurnState
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
@@ -21,8 +19,7 @@ case class SnakeGameWorld(snake: Snake,
                           board: Board,
                           food: Food,
                           isPlaying: Boolean,
-                          moveNumber: MoveNumber,
-                          obstacleGenerator: ObstacleGenerator
+                          moveNumber: MoveNumber
                          ) {
 
   def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F]): F[SnakeGameWorld] = {
@@ -32,7 +29,7 @@ case class SnakeGameWorld(snake: Snake,
       board <- boardActionStateReader.askForBoard
       moveNumber <- boardActionStateReader.askForMoveNumber
       newWorld <- boardActionStateReader.inspectState { ps =>
-        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber + 1, ps.obstacleGenerator)
+        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber + 1) //TODO: copy instead
       }
     } yield newWorld
 
@@ -72,8 +69,6 @@ object SnakeGameWorld {
   val obstacles = Set.empty[Location]
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
-
-    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0), obstacleGenerator)
+    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0))
   }
 }

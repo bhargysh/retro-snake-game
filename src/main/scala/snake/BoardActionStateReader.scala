@@ -15,9 +15,11 @@ trait BoardActionStateReader[F[_]] {
 
   def generateFood: F[FoodPresent]
 
+  def generateObstacle: F[Location]
+
 }
 
-class BoardActionStateReaderImpl(foodGenerator: FoodGenerator[IO])
+class BoardActionStateReaderImpl(foodGenerator: FoodGenerator[IO], obstacleGenerator: ObstacleGenerator[IO])
   extends BoardActionStateReader[ReaderT[StateT[IO, PlayState, *], (Board, MoveNumber), *]] {
 
   def modifyState(f: PlayState => PlayState): Play[Unit] = {
@@ -45,4 +47,12 @@ class BoardActionStateReaderImpl(foodGenerator: FoodGenerator[IO])
     obstacles <- inspectState(_.obstacles)
     newFood <- ReaderT.liftF[P, PlayEnv, FoodPresent](StateT.liftF[IO, PlayState, FoodPresent](foodGenerator.apply(moveNumber, snake, board, obstacles)))
   } yield newFood
+
+  def generateObstacle: Play[Location] = for {
+    snake <- inspectState(_.snake)
+    board <- askForBoard
+    food <- inspectState(_.food)
+    currentObstacles <- inspectState(_.obstacles)
+    newObstacle <- ReaderT.liftF[P, PlayEnv, Location](StateT.liftF[IO, PlayState, Location](obstacleGenerator.apply(food, snake, board, currentObstacles)))
+  } yield newObstacle
 }

@@ -14,7 +14,7 @@ object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
-    implicit val boardActionStateReader: BoardActionStateReaderImpl = new BoardActionStateReaderImpl(foodGenerator)
+    implicit val boardActionStateReader: BoardActionStateReaderImpl = new BoardActionStateReaderImpl(foodGenerator, obstacleGenerator)
 
     val liftGame = new FunctionK[IO, Game] {
       def apply[A](fa: IO[A]): Game[A] = StateT.liftF[IO, SnakeGameWorld, A](fa)
@@ -32,7 +32,7 @@ object Main extends IOApp {
         new GameStep[Game](
           getInput[Game](boardUI),
           renderer.renderView,
-          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(obstacleGenerator)(sng.play[Play](maybeDirection))
+          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(sng.play[Play](maybeDirection))
         )
       _ <- loop[SnakeGameWorld, Game](gameStep.updateGame, liftGame)(world)
     } yield ExitCode.Success
@@ -41,14 +41,13 @@ object Main extends IOApp {
       .runA(SnakeGameWorld.newSnakeGameWorld)
   }
 
-  def toGameState(obstacleGenerator: ObstacleGenerator)(play: Play[SnakeGameWorld]): Game[SnakeGameWorld] = {
+  def toGameState(play: Play[SnakeGameWorld]): Game[SnakeGameWorld] = {
     StateT.modifyF { (oldSNG: SnakeGameWorld) =>
       val ps = PlayState(
         playing = oldSNG.isPlaying,
         food = oldSNG.food,
         snake = oldSNG.snake,
-        obstacles = oldSNG.obstacles,
-        obstacleGenerator = obstacleGenerator
+        obstacles = oldSNG.obstacles
       )
       play
         .run((oldSNG.board, oldSNG.moveNumber))
