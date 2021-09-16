@@ -21,11 +21,10 @@ case class SnakeGameWorld(snake: Snake,
                           isPlaying: Boolean,
                           moveNumber: MoveNumber
                          ) {
-
-  def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F]): F[SnakeGameWorld] = {
-    val actionRunner: ActionRunner[BoardAction, F] = new ActionRunner[BoardAction, F](_.execute[F])
+  // TODO: do we still need to do this in SnakeGameWorld, maybe the move increment can be moved to its own MoveCounter?
+  def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F], actionRunner: ActionRunner[F, BoardAction]): F[SnakeGameWorld] = {
     for {
-      _ <- actionRunner.go(Vector(StartTurn(direction)))
+      _ <- actionRunner.runActions(Vector(StartTurn(direction)))
       board <- boardActionStateReader.askForBoard
       moveNumber <- boardActionStateReader.askForMoveNumber
       newWorld <- boardActionStateReader.inspectState { ps =>

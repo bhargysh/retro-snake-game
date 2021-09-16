@@ -15,6 +15,7 @@ object Main extends IOApp {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
     implicit val boardActionStateReader: BoardActionStateReaderImpl = new BoardActionStateReaderImpl(foodGenerator, obstacleGenerator)
+    implicit val actionRunner: ActionRunner[Play, BoardAction] = new ActionRunnerImpl[Play, BoardAction](_.execute[Play])
 
     val liftGame = new FunctionK[IO, Game] {
       def apply[A](fa: IO[A]): Game[A] = StateT.liftF[IO, SnakeGameWorld, A](fa)
@@ -26,7 +27,6 @@ object Main extends IOApp {
       renderedWorld: Node = html.render(world)
       boardUI <- appendBoardToDocument[Game](renderedWorld)
       renderer <- Renderer[Game](boardUI, html.render, renderedWorld)
-//      actionRunner = new ActionRunner[BoardAction, Play](_.execute) TODO: ideally we would initialise the runner once, here
       _ <- liftGame(actionOnKeyboardEvent(boardUI))
       gameStep =
         new GameStep[Game](

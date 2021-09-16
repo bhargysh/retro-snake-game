@@ -5,9 +5,14 @@ import cats.implicits._
 import scala.util.{Right => EitherRight}
 import scala.util.{Left => EitherLeft}
 
-class ActionRunner[A, M[_]](f: A => M[Vector[A]])(implicit M: Monad[M]) {
+trait ActionRunner[F[_], A] {
+  def runActions(actions: Vector[A]): F[Unit]
+}
 
-  def go(actions: Vector[A]): M[Unit] = {
+
+class ActionRunnerImpl[F[_], A](f: A => F[Vector[A]])(implicit M: Monad[F]) extends ActionRunner[F, A] {
+
+  def runActions(actions: Vector[A]): F[Unit] = {
     M.tailRecM(actions) {
       case Vector() => M.pure(EitherRight(()))
       case action +: oldActions => for {

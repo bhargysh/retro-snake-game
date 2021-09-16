@@ -2,13 +2,12 @@ package snake
 
 import cats.effect.IO
 
-import scala.util.Random
-
 trait BoardActionFixtures {
 
   def foodGenerator(): FoodGenerator[IO] = (moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]) => ???
+  def obstacleGenerator(): ObstacleGenerator[IO] = (food: Food, snake: Snake, board: Board, obstacles: Set[Location]) => ???
 
-  implicit val boardActionStateReader: BoardActionStateReader[Play] = new BoardActionStateReaderImpl(foodGenerator(), new RandomObstacleGenerator(new Random)) //TODO: confirm if we need the actual random obstacle gen
+  implicit val boardActionStateReader: BoardActionStateReader[Play] = new BoardActionStateReaderImpl(foodGenerator(), obstacleGenerator())
 
   def initialPlayState = PlayState(
     playing = true,
