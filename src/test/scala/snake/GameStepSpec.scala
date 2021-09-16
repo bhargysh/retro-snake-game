@@ -8,6 +8,10 @@ import org.specs2.mutable.Specification
 class GameStepSpec extends Specification with BoardActionFixtures {
 
   "updateGame" should {
+    implicit val actionRunner: ActionRunner[Play, BoardAction] = new ActionRunner[Play, BoardAction] {
+      def runActions(actions: Vector[BoardAction]): Play[Unit] = ().pure[Play]
+    }
+
     def getDirection(direction: Option[Direction]): Play[Option[Direction]] = direction.pure[Play]
     def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = sng.play[Play](dir)
 
@@ -43,19 +47,31 @@ class GameStepSpec extends Specification with BoardActionFixtures {
         .run(SnakeGameWorld.board, MoveNumber(0))
         .runA(initialPlayState.copy(snake = snake))
         .unsafeRunSync() shouldEqual None
-    }
+    } //TODO: fix this
 
-    "pass direction input to produce new SnakeGameWorld" in { //TODO: fix this and think about is this easier to test .run.run.unsaferunsync errywhere
-      val direction: Option[Direction] = Some(Left)
+    "pass direction input to produce new SnakeGameWorld" in { //TODO: think about is this easier to test .run.run.unsaferunsync errywhere
+      def playTurn(ref: Ref[Play, Option[Direction]])(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
+        ref.set(dir).map(_ => sng)
+      }
+
+      val inputDirection: Option[Direction] = Some(Left)
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
-      val gameStep = new GameStep[Play](direction.pure[Play], _ => ().pure[Play], playTurn)
+      val result: Play[Option[Direction]] = for {
+        dirRef <- Ref[Play].of[Option[Direction]](None)
+        gameStep = new GameStep[Play](inputDirection.pure[Play], _ => ().pure[Play], playTurn(dirRef))
+        _ <- gameStep.updateGame(snakeGameWorld)
+        someDir <- dirRef.get
+      } yield someDir
 
-      gameStep.updateGame(snakeGameWorld)
+
+      implicit val actionRunner2: ActionRunner[Play, BoardAction] = new ActionRunner[Play, BoardAction] {
+        def runActions(actions: Vector[BoardAction]): Play[Unit] = ???
+      }
+
+      result
         .run(SnakeGameWorld.board, MoveNumber(0))
         .runA(initialPlayState)
-        .unsafeRunSync() should beLike[Option[SnakeGameWorld]] { case actualSnakeGameWorld =>
-        actualSnakeGameWorld.map(_.snake.direction) should beSome(Left)
-      }
+        .unsafeRunSync() shouldEqual inputDirection
     }
   }
 }

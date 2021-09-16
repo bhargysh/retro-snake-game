@@ -1,19 +1,14 @@
 package snake
 
-import cats.Id
+import cats.implicits._
 import org.specs2.mutable.Specification
-
-import scala.util.Random
 
 class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
   "play" should {
     "return a new SnakeGameWorld" in {
-      val modifiedSnake = Snake(
-        List(Location(2, 1), Location(2, 2)),
-        length = 2,
-        direction = Left
-      )
-      val expectedObstacles = Set(Location(2, 3))
+      implicit val actionRunner: ActionRunner[Play, BoardAction] = new ActionRunner[Play, BoardAction] {
+        def runActions(actions: Vector[BoardAction]): Play[Unit] = ().pure[Play]
+      }
       val snake = Snake(
         List(Location(1, 1), Location(1, 2)),
         length = 2,
@@ -27,12 +22,11 @@ class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
         isPlaying = true,
         MoveNumber(1)
       )
-      val updatedSNG =
-        initialSNG.play(direction = Some(Up))
+      val updatedSNG: SnakeGameWorld =
+        initialSNG.play[Play](direction = Some(Up))
           .run(initialSNG.board, initialSNG.moveNumber)
-          .run(initialPlayState)
+          .runA(initialPlayState)
           .unsafeRunSync()
-          ._2
 
       updatedSNG.moveNumber shouldEqual MoveNumber(2) //TODO: what should this test be testing?
     }
