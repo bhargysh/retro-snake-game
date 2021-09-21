@@ -8,22 +8,21 @@ import org.specs2.mutable.Specification
 class GameStepSpec extends Specification with BoardActionFixtures {
 
   "updateGame" should {
-    implicit val actionRunner: ActionRunner[Play, BoardAction] = new ActionRunner[Play, BoardAction] {
-      def runActions(actions: Vector[BoardAction]): Play[Unit] = ().pure[Play]
-    }
-
+    implicit val actionRunner: ActionRunner[Play, BoardAction] = (actions: Vector[BoardAction]) => ().pure[Play]
     def getDirection(direction: Option[Direction]): Play[Option[Direction]] = direction.pure[Play]
-    def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = sng.play[Play](dir)
 
     "return new SnakeGameWorld when game is continuing" in {
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
       def renderView(ref: Ref[Play, Boolean])(snakeGameWorld: SnakeGameWorld): Play[Unit] = {
         ref.set(true)
       }
+      def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
+        sng.copy(moveNumber = MoveNumber(1)).pure[Play]
+      }
 
-      val result: Kleisli[P, (Board, MoveNumber), (Option[SnakeGameWorld], Boolean)] = for {
+      val result: Play[(Option[SnakeGameWorld], Boolean)] = for {
         called <- Ref[Play].of(false)
-        gameStep = new GameStep[Play](getDirection(None), renderView(called), playTurn) //TODO: don't test snake game world, make this simpler
+        gameStep = new GameStep[Play](getDirection(None), renderView(called), playTurn)
         newWorld <- gameStep.updateGame(snakeGameWorld)
         calledValue <- called.get
       } yield (newWorld, calledValue)
@@ -41,13 +40,17 @@ class GameStepSpec extends Specification with BoardActionFixtures {
       val snake = Snake(List(Location(8,8), Location(8,7)), 2, Up)
       val immovableSnakeGameWorld = SnakeGameWorld.newSnakeGameWorld.copy(snake = snake)
       val none: Option[Direction] = None
+
+      def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
+        sng.copy(isPlaying = false).pure[Play]
+      }
       val gameStep = new GameStep(none.pure[Play], _ => ().pure[Play], playTurn)
 
       gameStep.updateGame(immovableSnakeGameWorld)
         .run(SnakeGameWorld.board, MoveNumber(0))
         .runA(initialPlayState.copy(snake = snake))
         .unsafeRunSync() shouldEqual None
-    } //TODO: fix this
+    }
 
     "pass direction input to produce new SnakeGameWorld" in { //TODO: think about is this easier to test .run.run.unsaferunsync errywhere
       def playTurn(ref: Ref[Play, Option[Direction]])(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {

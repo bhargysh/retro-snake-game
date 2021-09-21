@@ -28,20 +28,9 @@ case class SnakeGameWorld(snake: Snake,
       board <- boardActionStateReader.askForBoard
       moveNumber <- boardActionStateReader.askForMoveNumber
       newWorld <- boardActionStateReader.inspectState { ps =>
-        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber + 1) //TODO: copy instead
+        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber + 1)
       }
     } yield newWorld
-
-    /*
-    val initialPlayState = PlayState(isPlaying, food, snake, obstacles, obstacleGenerator)
-    .run((board, moveNumber))
-        .run(initialPlayState)
-        .map {
-          case (playState, _) => SnakeGameWorld(
-            playState.snake, playState.obstacles, board, playState.food, playState.playing, moveNumber + 1, obstacleGenerator
-          )
-        }
-     */
   }
 
 
