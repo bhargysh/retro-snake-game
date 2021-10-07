@@ -4,8 +4,9 @@ import cats.data.Kleisli
 import cats.effect.concurrent.Ref
 import cats.implicits._
 import org.specs2.mutable.Specification
+import snake.components.PlayStateFixtures
 
-class GameStepSpec extends Specification with BoardActionFixtures {
+class GameStepSpec extends Specification with BoardActionFixtures with PlayStateFixtures {
 
   "updateGame" should {
     implicit val actionRunner: ActionRunner[Play, BoardAction] = (actions: Vector[BoardAction]) => ().pure[Play]
@@ -38,11 +39,11 @@ class GameStepSpec extends Specification with BoardActionFixtures {
 
     "return None when game is over" in {
       val snake = Snake(List(Location(8,8), Location(8,7)), 2, Up)
-      val immovableSnakeGameWorld = SnakeGameWorld.newSnakeGameWorld.copy(snake = snake)
+      val immovableSnakeGameWorld = modifyPlayState(_.copy(snake = snake))
       val none: Option[Direction] = None
 
       def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
-        sng.copy(isPlaying = false).pure[Play]
+        sng.copy(playState = sng.playState.copy(playing = false)).pure[Play]
       }
       val gameStep = new GameStep(none.pure[Play], _ => ().pure[Play], playTurn)
 
@@ -52,7 +53,7 @@ class GameStepSpec extends Specification with BoardActionFixtures {
         .unsafeRunSync() shouldEqual None
     }
 
-    "pass direction input to produce new SnakeGameWorld" in { //TODO: think about is this easier to test .run.run.unsaferunsync errywhere
+    "pass direction input to produce new SnakeGameWorld" in {
       def playTurn(ref: Ref[Play, Option[Direction]])(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
         ref.set(dir).map(_ => sng)
       }

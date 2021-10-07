@@ -42,16 +42,8 @@ object Main extends IOApp {
   }
 
   def toGameState(play: Play[SnakeGameWorld]): Game[SnakeGameWorld] = {
-    StateT.modifyF { (oldSNG: SnakeGameWorld) =>
-      val ps = PlayState(
-        playing = oldSNG.isPlaying,
-        food = oldSNG.food,
-        snake = oldSNG.snake,
-        obstacles = oldSNG.obstacles
-      )
-      play
-        .run((oldSNG.board, oldSNG.moveNumber))
-        .runA(ps)
+    StateT.modifyF[IO, SnakeGameWorld] {
+      case SnakeGameWorld(board, moveNumber, playState) => play.run((board, moveNumber)).runA(playState)
     }.get
   }
 

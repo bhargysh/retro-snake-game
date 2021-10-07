@@ -13,12 +13,12 @@ class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
         direction = Up
       )
       val initialSNG = SnakeGameWorld(
-        snake,
-        SnakeGameWorld.obstacles,
         SnakeGameWorld.board,
+        MoveNumber(1),
+        PlayState(playing = true,
         SnakeGameWorld.food,
-        isPlaying = true,
-        MoveNumber(1)
+          snake,
+        SnakeGameWorld.obstacles)
       )
 
       val expectedBoardActions: Vector[BoardAction] = Vector(StartTurn(Some(Up)))
@@ -40,7 +40,7 @@ class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
         .unsafeRunSync()
 
       boardActions should contain(exactly(expectedBoardActions))
-      updatedSNG.moveNumber shouldEqual MoveNumber(2) //TODO: add a check for obstacles too
+      updatedSNG.moveNumber shouldEqual MoveNumber(2)
     }
   }
 }

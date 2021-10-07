@@ -10,17 +10,9 @@ case class MoveNumber(number: Int) {
   def -(other: MoveNumber): Int = number - other.number
 }
 
-object MoveNumber {
-  implicit val orderingMoveNumber: Ordering[MoveNumber] = Ordering[Int].on((n: MoveNumber) => n.number)
-}
-
-case class SnakeGameWorld(snake: Snake,
-                          obstacles: Set[Location],
-                          board: Board,
-                          food: Food,
-                          isPlaying: Boolean,
-                          moveNumber: MoveNumber
-                         ) {
+case class SnakeGameWorld(board: Board,
+                          moveNumber: MoveNumber,
+                          playState: PlayState) {
   // TODO: do we still need to do this in SnakeGameWorld, maybe the move increment can be moved to its own MoveCounter?
   def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F], actionRunner: ActionRunner[F, BoardAction]): F[SnakeGameWorld] = {
     for {
@@ -28,7 +20,7 @@ case class SnakeGameWorld(snake: Snake,
       board <- boardActionStateReader.askForBoard
       moveNumber <- boardActionStateReader.askForMoveNumber
       newWorld <- boardActionStateReader.inspectState { ps =>
-        SnakeGameWorld(ps.snake, ps.obstacles, board, ps.food, ps.playing, moveNumber + 1)
+        SnakeGameWorld(board, moveNumber + 1, ps)
       }
     } yield newWorld
   }
@@ -57,6 +49,6 @@ object SnakeGameWorld {
   val obstacles = Set.empty[Location]
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    new SnakeGameWorld(snake, obstacles, board, food, isPlaying, MoveNumber(0))
+    new SnakeGameWorld(board, MoveNumber(0), PlayState(isPlaying, food, snake, obstacles))
   }
 }

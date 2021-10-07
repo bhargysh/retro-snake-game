@@ -53,15 +53,16 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
   } //TODO: revisit to make it not so ugly UI
 
   def render(): Vector[Element] = {
-    val currentFoodLocation: Option[Location] = snakeGameWorld.food match {
+    val playState = snakeGameWorld.playState
+    val currentFoodLocation: Option[Location] = playState.food match {
       case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some(location)
       case _ => None
     }
 
     def convertToApparantCell(cell: snake.Cell, location: Location): snake.Cell = {
-        if(snakeGameWorld.snake.location.contains(location)) SnakePart
+        if(playState.snake.location.contains(location)) SnakePart
         else if(currentFoodLocation.contains(location)) FoodCell
-        else if(snakeGameWorld.obstacles.contains(location)) ObstacleCell
+        else if(playState.obstacles.contains(location)) ObstacleCell
         else cell
     }
 
@@ -76,7 +77,7 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
     } yield node
 
     val children = nodes.toVector
-    val gameOverElementNodes: Vector[ElementNode] = GameOver(snakeGameWorld.isPlaying).render().map(elem => ElementNode(elem))
+    val gameOverElementNodes: Vector[ElementNode] = GameOver(playState.playing).render().map(elem => ElementNode(elem))
     val board: ElementNode = ElementNode(Element("div", Vector("board"), None, children))
     val container = Element("div", Vector("container"), None, board +: gameOverElementNodes)
     Vector(container)

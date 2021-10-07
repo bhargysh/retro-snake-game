@@ -11,6 +11,9 @@ import scala.util.Random
 class RandomFoodGeneratorSpec extends Specification with ScalaCheck with IOMatchers {
   "Random food generator" should {
     implicit val snakeArb = Arbitrary(Generators.snakeGen.filter(snake => !snake.location.contains(Location(3, 3))))
+
+    implicit val orderingMoveNumber: Ordering[MoveNumber] = Ordering[Int].on((n: MoveNumber) => n.number)
+
     "generate food that is not on the snake, wall, or obstable" >> prop { (moveNumber: MoveNumber, snake: Snake) =>
       val food = new RandomFoodGenerator(new Random())
       val foodLocation = Location(3,3)
