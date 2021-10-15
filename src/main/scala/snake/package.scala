@@ -7,37 +7,37 @@ package object snake { //want something at top level, cannot usefully define it 
 //  type App[A] = ReaderT[AppState, Board, A] // A => result type
 //  type AppState[A] = State[(PlayState, MoveNumber), A] // this is because State has (S,A) needs two types
 
-  type PlayEnv = (Board, MoveNumber) //TurnEnv
-  type P[A] = StateT[IO, TurnState, A] // TurnState
-  type Play[A] = ReaderT[P, PlayEnv, A] // Turn
-  type Game[A] = StateT[IO, SnakeGameWorld, A] //TODO: rename things
+  type TurnEnv = (Board, MoveNumber)
+  type P[A] = StateT[IO, TurnState, A]
+  type Turn[A] = ReaderT[P, TurnEnv, A]
+  type Game[A] = StateT[IO, SnakeGameWorld, A]
 //  type P = Lambda[(F[_], A) => StateT[F, PlayState, A]]
 //  type Play[A] = ReaderT[P, PlayEnv, A]
 
-  implicit def readerTforStuff: Sync[Play] = new Sync[Play] {
+  implicit def readerTforStuff: Sync[Turn] = new Sync[Turn] {
 
-    def suspend[A](thunk: => Play[A]): Play[A] = ReaderT
-      .liftF[StateT[IO, TurnState, *], (Board, MoveNumber), Play[A]](StateT.liftF[IO, TurnState, Play[A]](IO.suspend(IO[Play[A]](thunk)))).flatMap(identity)
+    def suspend[A](thunk: => Turn[A]): Turn[A] = ReaderT
+      .liftF[StateT[IO, TurnState, *], (Board, MoveNumber), Turn[A]](StateT.liftF[IO, TurnState, Turn[A]](IO.suspend(IO[Turn[A]](thunk)))).flatMap(identity)
 
-    def bracketCase[A, B](acquire: Play[A])(use: A => Play[B])(release: (A, ExitCase[Throwable]) => Play[Unit]): Play[B] = {
+    def bracketCase[A, B](acquire: Turn[A])(use: A => Turn[B])(release: (A, ExitCase[Throwable]) => Turn[Unit]): Turn[B] = {
       Bracket.catsKleisliBracket[P, (Board, MoveNumber), Throwable](Sync[P]).bracketCase(acquire)(use)(release)
     }
 
-    def raiseError[A](e: Throwable): Play[A] = ReaderT
+    def raiseError[A](e: Throwable): Turn[A] = ReaderT
       .liftF[StateT[IO, TurnState, *], (Board, MoveNumber), A](StateT.liftF[IO, TurnState, A](IO.raiseError(e)))
 
-    def handleErrorWith[A](fa: Play[A])(f: Throwable => Play[A]): Play[A] = Kleisli { env: (Board, MoveNumber) =>
+    def handleErrorWith[A](fa: Turn[A])(f: Throwable => Turn[A]): Turn[A] = Kleisli { env: (Board, MoveNumber) =>
       val pOfA: P[A] = fa.run(env)
       ApplicativeError[P, Throwable].handleErrorWith(pOfA)(throwable => f(throwable).run(env))
     }
 
     //A -> IO[B], get to StateT IO[B]
 
-    def pure[A](x: A): Play[A] = ReaderT.liftF[StateT[IO, TurnState, *], (Board, MoveNumber), A](StateT.liftF[IO, TurnState, A](IO.pure[A](x)))
+    def pure[A](x: A): Turn[A] = ReaderT.liftF[StateT[IO, TurnState, *], (Board, MoveNumber), A](StateT.liftF[IO, TurnState, A](IO.pure[A](x)))
 
-    def flatMap[A, B](fa: Play[A])(f: A => Play[B]): Play[B] = fa.flatMap(f)
+    def flatMap[A, B](fa: Turn[A])(f: A => Turn[B]): Turn[B] = fa.flatMap(f)
 
-    def tailRecM[A, B](a: A)(f: A => Play[Either[A, B]]): Play[B] = {
+    def tailRecM[A, B](a: A)(f: A => Turn[Either[A, B]]): Turn[B] = {
       Kleisli.catsDataMonadForKleisli[P, (Board, MoveNumber)](IndexedStateT.catsDataMonadForIndexedStateT[IO, TurnState](Monad[IO])).tailRecM(a)(f)
     }
   }

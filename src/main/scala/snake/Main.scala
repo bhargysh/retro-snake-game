@@ -15,7 +15,7 @@ object Main extends IOApp {
     val foodGenerator: RandomFoodGenerator = new RandomFoodGenerator(new Random())
     val obstacleGenerator: RandomObstacleGenerator = new RandomObstacleGenerator(new Random())
     implicit val boardActionStateReader: BoardActionStateReaderImpl = new BoardActionStateReaderImpl(foodGenerator, obstacleGenerator)
-    implicit val actionRunner: ActionRunner[Play, BoardAction] = new ActionRunnerImpl[Play, BoardAction](_.execute[Play])
+    implicit val actionRunner: ActionRunner[Turn, BoardAction] = new ActionRunnerImpl[Turn, BoardAction](_.execute[Turn])
 
     val liftGame = new FunctionK[IO, Game] {
       def apply[A](fa: IO[A]): Game[A] = StateT.liftF[IO, SnakeGameWorld, A](fa)
@@ -32,7 +32,7 @@ object Main extends IOApp {
         new GameStep[Game](
           getInput[Game](boardUI),
           renderer.renderView,
-          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(sng.play[Play](maybeDirection))
+          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(sng.play[Turn](maybeDirection))
         )
       _ <- loop[SnakeGameWorld, Game](gameStep.updateGame, liftGame)(world)
     } yield ExitCode.Success
@@ -41,7 +41,7 @@ object Main extends IOApp {
       .runA(SnakeGameWorld.newSnakeGameWorld)
   }
 
-  def toGameState(play: Play[SnakeGameWorld]): Game[SnakeGameWorld] = {
+  def toGameState(play: Turn[SnakeGameWorld]): Game[SnakeGameWorld] = {
     StateT.modifyF[IO, SnakeGameWorld] {
       case SnakeGameWorld(board, moveNumber, playState) => play.run((board, moveNumber)).runA(playState)
     }.get

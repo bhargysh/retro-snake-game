@@ -9,21 +9,21 @@ import snake.components.PlayStateFixtures
 class GameStepSpec extends Specification with BoardActionFixtures with PlayStateFixtures {
 
   "updateGame" should {
-    implicit val actionRunner: ActionRunner[Play, BoardAction] = (actions: Vector[BoardAction]) => ().pure[Play]
-    def getDirection(direction: Option[Direction]): Play[Option[Direction]] = direction.pure[Play]
+    implicit val actionRunner: ActionRunner[Turn, BoardAction] = (actions: Vector[BoardAction]) => ().pure[Turn]
+    def getDirection(direction: Option[Direction]): Turn[Option[Direction]] = direction.pure[Turn]
 
     "return new SnakeGameWorld when game is continuing" in {
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
-      def renderView(ref: Ref[Play, Boolean])(snakeGameWorld: SnakeGameWorld): Play[Unit] = {
+      def renderView(ref: Ref[Turn, Boolean])(snakeGameWorld: SnakeGameWorld): Turn[Unit] = {
         ref.set(true)
       }
-      def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
-        sng.copy(moveNumber = MoveNumber(1)).pure[Play]
+      def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Turn[SnakeGameWorld] = {
+        sng.copy(moveNumber = MoveNumber(1)).pure[Turn]
       }
 
-      val result: Play[(Option[SnakeGameWorld], Boolean)] = for {
-        called <- Ref[Play].of(false)
-        gameStep = new GameStep[Play](getDirection(None), renderView(called), playTurn)
+      val result: Turn[(Option[SnakeGameWorld], Boolean)] = for {
+        called <- Ref[Turn].of(false)
+        gameStep = new GameStep[Turn](getDirection(None), renderView(called), playTurn)
         newWorld <- gameStep.updateGame(snakeGameWorld)
         calledValue <- called.get
       } yield (newWorld, calledValue)
@@ -42,10 +42,10 @@ class GameStepSpec extends Specification with BoardActionFixtures with PlayState
       val immovableSnakeGameWorld = modifyPlayState(_.copy(snake = snake))
       val none: Option[Direction] = None
 
-      def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
-        sng.copy(playState = sng.playState.copy(playing = false)).pure[Play]
+      def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Turn[SnakeGameWorld] = {
+        sng.copy(playState = sng.playState.copy(playing = false)).pure[Turn]
       }
-      val gameStep = new GameStep(none.pure[Play], _ => ().pure[Play], playTurn)
+      val gameStep = new GameStep(none.pure[Turn], _ => ().pure[Turn], playTurn)
 
       gameStep.updateGame(immovableSnakeGameWorld)
         .run(SnakeGameWorld.board, MoveNumber(0))
@@ -54,22 +54,22 @@ class GameStepSpec extends Specification with BoardActionFixtures with PlayState
     }
 
     "pass direction input to produce new SnakeGameWorld" in {
-      def playTurn(ref: Ref[Play, Option[Direction]])(sng: SnakeGameWorld, dir: Option[Direction]): Play[SnakeGameWorld] = {
+      def playTurn(ref: Ref[Turn, Option[Direction]])(sng: SnakeGameWorld, dir: Option[Direction]): Turn[SnakeGameWorld] = {
         ref.set(dir).map(_ => sng)
       }
 
       val inputDirection: Option[Direction] = Some(Left)
       val snakeGameWorld = SnakeGameWorld.newSnakeGameWorld
-      val result: Play[Option[Direction]] = for {
-        dirRef <- Ref[Play].of[Option[Direction]](None)
-        gameStep = new GameStep[Play](inputDirection.pure[Play], _ => ().pure[Play], playTurn(dirRef))
+      val result: Turn[Option[Direction]] = for {
+        dirRef <- Ref[Turn].of[Option[Direction]](None)
+        gameStep = new GameStep[Turn](inputDirection.pure[Turn], _ => ().pure[Turn], playTurn(dirRef))
         _ <- gameStep.updateGame(snakeGameWorld)
         someDir <- dirRef.get
       } yield someDir
 
 
-      implicit val actionRunner2: ActionRunner[Play, BoardAction] = new ActionRunner[Play, BoardAction] {
-        def runActions(actions: Vector[BoardAction]): Play[Unit] = ???
+      implicit val actionRunner2: ActionRunner[Turn, BoardAction] = new ActionRunner[Turn, BoardAction] {
+        def runActions(actions: Vector[BoardAction]): Turn[Unit] = ???
       }
 
       result

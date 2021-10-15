@@ -7,7 +7,7 @@ trait BoardActionFixtures {
   def foodGenerator(): FoodGenerator[IO] = (moveNumber: MoveNumber, snake: Snake, board: Board, obstacles: Set[Location]) => ???
   def obstacleGenerator(): ObstacleGenerator[IO] = (food: Food, snake: Snake, board: Board, obstacles: Set[Location]) => ???
 
-  implicit val boardActionStateReader: BoardActionStateReader[Play] = new BoardActionStateReaderImpl(foodGenerator(), obstacleGenerator())
+  implicit val boardActionStateReader: BoardActionStateReader[Turn] = new BoardActionStateReaderImpl(foodGenerator(), obstacleGenerator())
 
   def initialPlayState = TurnState(
     playing = true,
