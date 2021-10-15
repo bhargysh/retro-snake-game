@@ -18,7 +18,7 @@ class SyncPlayLawsSpec extends Specification with Discipline with BoardActionFix
 
   val initialEnv: PlayEnv = (SnakeGameWorld.board, MoveNumber(0))
 
-  implicit val eqPlayState: Eq[PlayState] = Eq.fromUniversalEquals[PlayState]
+  implicit val eqPlayState: Eq[TurnState] = Eq.fromUniversalEquals[TurnState]
 
   implicit def eqFa[A: Eq]: Eq[Play[A]] = (x: Play[A], y: Play[A]) => {
     val a = x
@@ -31,7 +31,7 @@ class SyncPlayLawsSpec extends Specification with Discipline with BoardActionFix
       .run(initialPlayState)
       .attempt
       .unsafeRunSync()
-    Eq[Either[Throwable, (PlayState, A)]].eqv(a, a2)
+    Eq[Either[Throwable, (TurnState, A)]].eqv(a, a2)
   }
 
   val eqEitherT: Eq[EitherT[Play, Throwable, Int]] = implicitly[Eq[EitherT[Play, Throwable, Int]]]

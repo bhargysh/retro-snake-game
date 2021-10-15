@@ -3,7 +3,7 @@ package snake
 import cats.Monad
 import cats.implicits._
 
-case class PlayState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location]) //TODO: rename to TurnState
+case class TurnState(playing: Boolean, food: Food, snake: Snake, obstacles: Set[Location])
 
 case class MoveNumber(number: Int) {
   def +(increment: Int): MoveNumber = MoveNumber(number + increment)
@@ -12,7 +12,7 @@ case class MoveNumber(number: Int) {
 
 case class SnakeGameWorld(board: Board,
                           moveNumber: MoveNumber,
-                          playState: PlayState) {
+                          playState: TurnState) {
   // TODO: do we still need to do this in SnakeGameWorld, maybe the move increment can be moved to its own MoveCounter?
   def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F], actionRunner: ActionRunner[F, BoardAction]): F[SnakeGameWorld] = {
     for {
@@ -49,6 +49,6 @@ object SnakeGameWorld {
   val obstacles = Set.empty[Location]
 
   def newSnakeGameWorld: SnakeGameWorld = {
-    new SnakeGameWorld(board, MoveNumber(0), PlayState(isPlaying, food, snake, obstacles))
+    new SnakeGameWorld(board, MoveNumber(0), TurnState(isPlaying, food, snake, obstacles))
   }
 }

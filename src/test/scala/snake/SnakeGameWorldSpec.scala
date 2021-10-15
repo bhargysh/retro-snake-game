@@ -15,7 +15,7 @@ class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
       val initialSNG = SnakeGameWorld(
         SnakeGameWorld.board,
         MoveNumber(1),
-        PlayState(playing = true,
+        TurnState(playing = true,
         SnakeGameWorld.food,
           snake,
         SnakeGameWorld.obstacles)

@@ -5,9 +5,9 @@ import cats.effect.IO
 
 trait BoardActionStateReader[F[_]] {
 
-  def modifyState(f: PlayState => PlayState): F[Unit]
+  def modifyState(f: TurnState => TurnState): F[Unit]
 
-  def inspectState[S](f: PlayState => S): F[S]
+  def inspectState[S](f: TurnState => S): F[S]
 
   def askForBoard: F[Board]
 
@@ -20,13 +20,13 @@ trait BoardActionStateReader[F[_]] {
 }
 
 class BoardActionStateReaderImpl(foodGenerator: FoodGenerator[IO], obstacleGenerator: ObstacleGenerator[IO])
-  extends BoardActionStateReader[ReaderT[StateT[IO, PlayState, *], (Board, MoveNumber), *]] {
+  extends BoardActionStateReader[ReaderT[StateT[IO, TurnState, *], (Board, MoveNumber), *]] {
 
-  def modifyState(f: PlayState => PlayState): Play[Unit] = {
-    ReaderT.liftF[P, PlayEnv, Unit](StateT.modify[IO, PlayState](f))
+  def modifyState(f: TurnState => TurnState): Play[Unit] = {
+    ReaderT.liftF[P, PlayEnv, Unit](StateT.modify[IO, TurnState](f))
   }
 
-  def inspectState[S](f: PlayState => S): Play[S] = {
+  def inspectState[S](f: TurnState => S): Play[S] = {
     ReaderT.liftF[P, PlayEnv, S](StateT.inspect(f))
   }
 
@@ -45,7 +45,7 @@ class BoardActionStateReaderImpl(foodGenerator: FoodGenerator[IO], obstacleGener
     snake <- inspectState(_.snake)
     board <- askForBoard
     obstacles <- inspectState(_.obstacles)
-    newFood <- ReaderT.liftF[P, PlayEnv, FoodPresent](StateT.liftF[IO, PlayState, FoodPresent](foodGenerator.apply(moveNumber, snake, board, obstacles)))
+    newFood <- ReaderT.liftF[P, PlayEnv, FoodPresent](StateT.liftF[IO, TurnState, FoodPresent](foodGenerator.apply(moveNumber, snake, board, obstacles)))
   } yield newFood
 
   def generateObstacle: Play[Location] = for {
@@ -53,6 +53,6 @@ class BoardActionStateReaderImpl(foodGenerator: FoodGenerator[IO], obstacleGener
     board <- askForBoard
     food <- inspectState(_.food)
     currentObstacles <- inspectState(_.obstacles)
-    newObstacle <- ReaderT.liftF[P, PlayEnv, Location](StateT.liftF[IO, PlayState, Location](obstacleGenerator.apply(food, snake, board, currentObstacles)))
+    newObstacle <- ReaderT.liftF[P, PlayEnv, Location](StateT.liftF[IO, TurnState, Location](obstacleGenerator.apply(food, snake, board, currentObstacles)))
   } yield newObstacle
 }
