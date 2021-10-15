@@ -18,3 +18,9 @@
 .gameover-span {
     vertical-align: middle;
 }
+
+@keyframes wiggle {
+  0% { transform: translate(-130px, 70px) rotate(45deg); }
+  50% { transform: translate(-130px, 70px) rotate(35deg); }
+  100% { transform: translate(-130px, 70px) rotate(40deg); }
+}

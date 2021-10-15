@@ -15,7 +15,9 @@ trait Component {
   def render(): Vector[Element]
 }
 
-case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int) extends Component {
+//TODO: Animate snake so its smoother when it moves
+
+case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int, classes: Vector[String] = Vector.empty) extends Component { //TODO: can we remove default
   def render(): Vector[Element] = {
     val text = cell match {
       case SnakePart => "🐍"
@@ -26,7 +28,7 @@ case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int) extends Comp
     }
     Vector(
       Element("div",
-      Vector.empty,
+      classes,
       Some(s"grid-column: ${x+1}; grid-row: ${boardHeight - y};"),
       Vector(TextNode(text))))
   }
@@ -50,28 +52,32 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
     val blinkTime = expiryTime - moveNumber
     if (blinkTime > 4) true
     else blinkTime % 2 == 0
-  } //TODO: revisit to make it not so ugly UI
+  }
+
+  def blinkFood(expiryTime: MoveNumber, moveNumber: MoveNumber) = {
+    val duration: Int = expiryTime - moveNumber
+  }
 
   def render(): Vector[Element] = {
     val playState = snakeGameWorld.playState
-    val currentFoodLocation: Option[Location] = playState.food match {
-      case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some(location)
+    val currentFoodLocation: Option[(Location, Vector[String])] = playState.food match {
+      case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some((location, Vector("food-present")))
       case _ => None
     }
 
-    def convertToApparantCell(cell: snake.Cell, location: Location): snake.Cell = {
-        if(playState.snake.location.contains(location)) SnakePart
-        else if(currentFoodLocation.contains(location)) FoodCell
-        else if(playState.obstacles.contains(location)) ObstacleCell
-        else cell
+    def convertToApparantCell(x: Int, y: Int): Cell = {
+      val location = Location(x, y)
+      //TODO: replace this block with match
+        if(playState.snake.location.contains(location)) Cell(SnakePart, x, y, snakeGameWorld.board.height)
+        else if(currentFoodLocation.contains(location)) Cell(FoodCell, x, y, snakeGameWorld.board.height, ???)
+        else if(playState.obstacles.contains(location)) Cell(ObstacleCell, x, y, snakeGameWorld.board.height)
+        else Cell(snakeGameWorld.board.cellAt(location), x, y, snakeGameWorld.board.height)
     }
 
     val nodes: immutable.Seq[ElementNode] = for {
       y <- Range(0, snakeGameWorld.board.height)
       x <- Range(0, snakeGameWorld.board.width)
-      location = Location(x, y)
-      snakeCell = convertToApparantCell(snakeGameWorld.board.cellAt(location), location)
-      cell = Cell(snakeCell, x, y, snakeGameWorld.board.height)
+      cell = convertToApparantCell(x, y)
       element <- cell.render()
       node = ElementNode(element)
     } yield node
