@@ -20,7 +20,11 @@
 }
 
 @keyframes wiggle {
-  0% { transform: translate(-130px, 70px) rotate(45deg); }
-  50% { transform: translate(-130px, 70px) rotate(35deg); }
-  100% { transform: translate(-130px, 70px) rotate(40deg); }
+  0% { transform: translateX(10%) rotate(45deg); }
+  50% { transform: translateX(-50%) rotate(35deg); }
+  100% { transform: translateX(10%) rotate(40deg); }
+}
+
+.food-present {
+    animation: wiggle 1s infinite;
 }

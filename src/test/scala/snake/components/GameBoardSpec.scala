@@ -15,7 +15,7 @@ class GameBoardSpec extends Specification with PlayStateFixtures {
   def findNodesWithText(elems: Vector[Element], text: String): Vector[Element] = {
     elems.flatMap(elem => findNodesWithText(elem, text))
   }
-  "SnakeGameHtml" should {
+  "GameBoard" should {
     "render the snake" in {
       val gameBoard = GameBoard(SnakeGameWorld.newSnakeGameWorld)
       val elements = gameBoard.render()
@@ -27,6 +27,7 @@ class GameBoardSpec extends Specification with PlayStateFixtures {
       val elements = gameBoard.render()
       findNodesWithText(elements, "🍕") must contain((e: Element) => {
         e.style must beSome("grid-column: 2; grid-row: 9;") // (1,1) is equivalent to the css grid's 2, 9
+        e.classes must contain(exactly("food-present"))
       })
     }
     "render no food if it should not be visible" in {

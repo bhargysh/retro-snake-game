@@ -54,9 +54,9 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
     else blinkTime % 2 == 0
   }
 
-  def blinkFood(expiryTime: MoveNumber, moveNumber: MoveNumber) = {
-    val duration: Int = expiryTime - moveNumber
-  }
+//  def blinkFood(expiryTime: MoveNumber, moveNumber: MoveNumber) = {
+//    val duration: Int = expiryTime - moveNumber
+//  }
 
   def render(): Vector[Element] = {
     val turnState = snakeGameWorld.turnState
@@ -67,12 +67,34 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
 
     def convertToApparantCell(x: Int, y: Int): Cell = {
       val location = Location(x, y)
-      def filterOnCurrentFood = currentFoodLocation.map { case (l, _) => l == location }
-      //TODO: replace this block with match
-        if(turnState.snake.location.contains(location)) Cell(SnakePart, x, y, snakeGameWorld.board.height)
-        else if(currentFoodLocation.contains(location)) Cell(FoodCell, x, y, snakeGameWorld.board.height, ???)
-        else if(turnState.obstacles.contains(location)) Cell(ObstacleCell, x, y, snakeGameWorld.board.height)
-        else Cell(snakeGameWorld.board.cellAt(location), x, y, snakeGameWorld.board.height)
+
+      object InSnake {
+        def unapply(location: Location): Option[Cell] = {
+          if(turnState.snake.location.contains(location)) Some(Cell(SnakePart, x, y, snakeGameWorld.board.height))
+          else None
+        }
+      } //TODO: Can we move this to Snake? Same with others...
+
+      object InFood {
+        def unapply(location: Location): Option[Cell] = currentFoodLocation match {
+          case Some((foodLocation, classes)) if foodLocation == location => Some(Cell(FoodCell, x, y, snakeGameWorld.board.height, classes))
+          case _ => None
+        }
+      }
+
+      object InObstacle {
+        def unapply(location: Location): Option[Cell] = {
+          if(turnState.obstacles.contains(location)) Some(Cell(ObstacleCell, x, y, snakeGameWorld.board.height))
+          else None
+        }
+      }
+
+      location match {
+        case InSnake(snakeCell) => snakeCell
+        case InFood(foodCell) => foodCell
+        case InObstacle(obstacleCell) => obstacleCell
+        case _ => Cell(snakeGameWorld.board.cellAt(location), x, y, snakeGameWorld.board.height)
+      }
     }
 
     val nodes: immutable.Seq[ElementNode] = for {
