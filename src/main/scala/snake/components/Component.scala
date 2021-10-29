@@ -1,6 +1,6 @@
 package snake.components
 
-import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, ObstacleCell, SnakeGameWorld, SnakePart, Wall}
+import snake.{EmptyCell, FoodCell, FoodPresent, Location, MoveNumber, ObstacleCell, SnakeGameWorld, SnakePart, TurnState, Wall}
 
 import scala.collection.immutable
 
@@ -59,18 +59,19 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
   }
 
   def render(): Vector[Element] = {
-    val playState = snakeGameWorld.playState
-    val currentFoodLocation: Option[(Location, Vector[String])] = playState.food match {
+    val turnState = snakeGameWorld.turnState
+    val currentFoodLocation: Option[(Location, Vector[String])] = turnState.food match {
       case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some((location, Vector("food-present")))
       case _ => None
     }
 
     def convertToApparantCell(x: Int, y: Int): Cell = {
       val location = Location(x, y)
+      def filterOnCurrentFood = currentFoodLocation.map { case (l, _) => l == location }
       //TODO: replace this block with match
-        if(playState.snake.location.contains(location)) Cell(SnakePart, x, y, snakeGameWorld.board.height)
+        if(turnState.snake.location.contains(location)) Cell(SnakePart, x, y, snakeGameWorld.board.height)
         else if(currentFoodLocation.contains(location)) Cell(FoodCell, x, y, snakeGameWorld.board.height, ???)
-        else if(playState.obstacles.contains(location)) Cell(ObstacleCell, x, y, snakeGameWorld.board.height)
+        else if(turnState.obstacles.contains(location)) Cell(ObstacleCell, x, y, snakeGameWorld.board.height)
         else Cell(snakeGameWorld.board.cellAt(location), x, y, snakeGameWorld.board.height)
     }
 
@@ -83,7 +84,7 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
     } yield node
 
     val children = nodes.toVector
-    val gameOverElementNodes: Vector[ElementNode] = GameOver(playState.playing).render().map(elem => ElementNode(elem))
+    val gameOverElementNodes: Vector[ElementNode] = GameOver(turnState.playing).render().map(elem => ElementNode(elem))
     val board: ElementNode = ElementNode(Element("div", Vector("board"), None, children))
     val container = Element("div", Vector("container"), None, board +: gameOverElementNodes)
     Vector(container)

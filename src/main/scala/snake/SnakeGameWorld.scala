@@ -12,7 +12,7 @@ case class MoveNumber(number: Int) {
 
 case class SnakeGameWorld(board: Board,
                           moveNumber: MoveNumber,
-                          playState: TurnState) {
+                          turnState: TurnState) {
   // TODO: do we still need to do this in SnakeGameWorld, maybe the move increment can be moved to its own MoveCounter?
   def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F], actionRunner: ActionRunner[F, BoardAction]): F[SnakeGameWorld] = {
     for {

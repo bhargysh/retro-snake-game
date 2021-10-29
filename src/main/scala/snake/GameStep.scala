@@ -13,7 +13,7 @@ class GameStep[F[_]: Sync](
     newSnakeGameWorld <- playTurn(snakeGameWorld, maybeDirection)
     _                 <- renderView(newSnakeGameWorld)
     result =
-      if (newSnakeGameWorld.playState.playing) {
+      if (newSnakeGameWorld.turnState.playing) {
         Some(newSnakeGameWorld)
       } else {
         None

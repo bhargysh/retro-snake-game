@@ -43,7 +43,7 @@ class GameStepSpec extends Specification with BoardActionFixtures with PlayState
       val none: Option[Direction] = None
 
       def playTurn(sng: SnakeGameWorld, dir: Option[Direction]): Turn[SnakeGameWorld] = {
-        sng.copy(playState = sng.playState.copy(playing = false)).pure[Turn]
+        sng.copy(turnState = sng.turnState.copy(playing = false)).pure[Turn]
       }
       val gameStep = new GameStep(none.pure[Turn], _ => ().pure[Turn], playTurn)
 
