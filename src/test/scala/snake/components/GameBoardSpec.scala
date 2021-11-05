@@ -27,14 +27,14 @@ class GameBoardSpec extends Specification with PlayStateFixtures {
       val elements = gameBoard.render()
       findNodesWithText(elements, "🍕") must contain((e: Element) => {
         e.style must beSome("grid-column: 2; grid-row: 9;") // (1,1) is equivalent to the css grid's 2, 9
-        e.classes must contain(exactly("food-present"))
+        e.classes must beEmpty
       })
     }
-    "render no food if it should not be visible" in {
+    "render disappearing food if it should expire soon" in {
       val snakeGameWorldWithFood = modifyPlayState(_.copy(food = FoodPresent(Location(1, 1), MoveNumber(1))))
       val gameBoard = GameBoard(snakeGameWorldWithFood)
       val elements = gameBoard.render()
-      findNodesWithText(elements, "🍕") must beEmpty
+      findNodesWithText(elements, "🍕") must contain((e: Element) => e.classes mustEqual Vector("food-disappearing"))
     }
     "render no food if it is not present" in {
       val snakeGameWorldWithFood = modifyPlayState(_.copy(food = FoodAbsent(MoveNumber(1))))

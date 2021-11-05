@@ -19,12 +19,12 @@
     vertical-align: middle;
 }
 
-@keyframes wiggle {
-  0% { transform: translateX(10%) rotate(45deg); }
-  50% { transform: translateX(-50%) rotate(35deg); }
-  100% { transform: translateX(10%) rotate(40deg); }
+@keyframes blinkingText{
+    0%{ opacity: 1; }
+    50%{ opacity: 0.5; }
+    100%{ opacity: 0; }
 }
 
-.food-present {
-    animation: wiggle 1s infinite;
+.food-disappearing {
+    animation: blinkingText 1s infinite;
 }

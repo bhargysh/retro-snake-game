@@ -17,7 +17,7 @@ trait Component {
 
 //TODO: Animate snake so its smoother when it moves
 
-case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int, classes: Vector[String] = Vector.empty) extends Component { //TODO: can we remove default
+case class Cell(cell: snake.Cell, x: Int, y: Int, boardHeight: Int, classes: Vector[String] = Vector.empty) extends Component {
   def render(): Vector[Element] = {
     val text = cell match {
       case SnakePart => "🐍"
@@ -48,20 +48,19 @@ case class GameOver(isPlaying: Boolean) extends Component {
 
 case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
 
-  private def foodVisible(expiryTime: MoveNumber, moveNumber: MoveNumber): Boolean = {
-    val blinkTime = expiryTime - moveNumber
-    if (blinkTime > 4) true
-    else blinkTime % 2 == 0
+  def foodClasses(expiryTime: MoveNumber, moveNumber: MoveNumber, playing: Boolean): Vector[String] = {
+    val timeLeft = expiryTime - moveNumber
+    if (timeLeft <= 4 && playing) {
+      Vector("food-disappearing")
+    } else {
+      Vector.empty
+    }
   }
-
-//  def blinkFood(expiryTime: MoveNumber, moveNumber: MoveNumber) = {
-//    val duration: Int = expiryTime - moveNumber
-//  }
 
   def render(): Vector[Element] = {
     val turnState = snakeGameWorld.turnState
     val currentFoodLocation: Option[(Location, Vector[String])] = turnState.food match {
-      case FoodPresent(location, expiryTime) if foodVisible(expiryTime, snakeGameWorld.moveNumber) => Some((location, Vector("food-present")))
+      case FoodPresent(location, expiryTime) => Some((location, foodClasses(expiryTime, snakeGameWorld.moveNumber, turnState.playing)))
       case _ => None
     }
 
@@ -73,7 +72,7 @@ case class GameBoard(snakeGameWorld: SnakeGameWorld) extends Component {
           if(turnState.snake.location.contains(location)) Some(Cell(SnakePart, x, y, snakeGameWorld.board.height))
           else None
         }
-      } //TODO: Can we move this to Snake? Same with others...
+      }
 
       object InFood {
         def unapply(location: Location): Option[Cell] = currentFoodLocation match {

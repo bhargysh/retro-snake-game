@@ -35,12 +35,6 @@ class SnakeGameHtmlSpec extends Specification with PlayStateFixtures {
           parentNode.attributes.getNamedItem("style").value mustEqual "grid-column: 2; grid-row: 9;"
         })
       }
-    "render no food if it should not be visible" in {
-      val snakeHtml = new SnakeGameHtml(document)
-      val snakeGameWorldWithFood = modifyPlayState(_.copy(food = FoodPresent(Location(1, 1), MoveNumber(1))))
-      val node = snakeHtml.render(snakeGameWorldWithFood)
-      findNodesWithText(node, "🍕") must beEmpty
-    }
     "render no food if it is not present" in {
       val snakeHtml = new SnakeGameHtml(document)
       val snakeGameWorldWithFood = modifyPlayState(_.copy(food = FoodAbsent(MoveNumber(1))))
