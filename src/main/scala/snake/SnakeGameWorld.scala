@@ -10,22 +10,14 @@ case class MoveNumber(number: Int) {
   def -(other: MoveNumber): Int = number - other.number
 }
 
+//SNG provides data to the renderer and calls action runner --> code smell, two responsibilities
+//TODO: Can we refactor play() to be a part of toGameSTate() instead i.e. pass direction to toGameSTate()?
 case class SnakeGameWorld(board: Board,
                           moveNumber: MoveNumber,
                           turnState: TurnState) {
-  // TODO: do we still need to do this in SnakeGameWorld, maybe the move increment can be moved to its own MoveCounter? Do this next Friday!!
-  def play[F[_]: Monad](direction: Option[Direction])(implicit boardActionStateReader: BoardActionStateReader[F], actionRunner: ActionRunner[F, BoardAction]): F[SnakeGameWorld] = {
-    for {
-      _ <- actionRunner.runActions(Vector(StartTurn(direction)))
-      board <- boardActionStateReader.askForBoard
-      moveNumber <- boardActionStateReader.askForMoveNumber
-      newWorld <- boardActionStateReader.inspectState { ps =>
-        SnakeGameWorld(board, moveNumber + 1, ps)
-      }
-    } yield newWorld
+  def play[F[_]: Monad](direction: Option[Direction])(implicit actionRunner: ActionRunner[F, BoardAction]): F[Unit] = {
+    actionRunner.runActions(Vector(StartTurn(direction)))
   }
-
-
 }
 
 object SnakeGameWorld {

@@ -23,24 +23,23 @@ class SnakeGameWorldSpec extends Specification with BoardActionFixtures {
 
       val expectedBoardActions: Vector[BoardAction] = Vector(StartTurn(Some(Up)))
 
-      val result: Turn[(Vector[Vector[BoardAction]], SnakeGameWorld)] = for {
+      val result: Turn[Vector[Vector[BoardAction]]] = for {
         inputActions <- Ref[Turn].of[Vector[Vector[BoardAction]]](Vector.empty)
-        newSNG <- {
+        _ <- {
           implicit val runner: ActionRunner[Turn, BoardAction] =
             (actions: Vector[BoardAction]) => inputActions.update(initialActions => initialActions :+ actions)
           initialSNG.play[Turn](direction = Some(Up))
         }
         calledActions <- inputActions.get
-      } yield (calledActions, newSNG)
+      } yield calledActions
 
 
-      val (boardActions, updatedSNG) = result
+      val (boardActions) = result
         .run(initialSNG.board, initialSNG.moveNumber)
         .runA(initialPlayState)
         .unsafeRunSync()
 
       boardActions should contain(exactly(expectedBoardActions))
-      updatedSNG.moveNumber shouldEqual MoveNumber(2)
     }
   }
 }
