@@ -6,6 +6,7 @@ import cats.implicits._
 import cats.{Monad, ~>}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
+import snake.GameState.toGameState
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.Random
@@ -39,26 +40,6 @@ object Main extends IOApp {
 
     playExit
       .runA(SnakeGameWorld.newSnakeGameWorld)
-  }
-
-  //TODO: Move this out of Main
-  def toGameState(play: Turn[Unit])(implicit boardActionStateReader: BoardActionStateReader[Turn]): Game[SnakeGameWorld] = {
-    def newSnakeGameWorld: Turn[SnakeGameWorld] =
-      for {
-        board <- boardActionStateReader.askForBoard
-        moveNumber <- boardActionStateReader.askForMoveNumber
-        newWorld <- boardActionStateReader.inspectState { turnState =>
-          SnakeGameWorld(board, moveNumber + 1, turnState)
-        }
-      } yield newWorld
-
-    StateT.modifyF[IO, SnakeGameWorld] {
-      case SnakeGameWorld(board, moveNumber, playState) =>
-        play
-          .flatMap(_ => newSnakeGameWorld)
-          .run((board, moveNumber))
-          .runA(playState)
-    }.get
   }
 
   private def loop[A, F[_]: Monad](work: A => F[Option[A]], lift: IO ~> F)(initial: A): F[Unit] =
