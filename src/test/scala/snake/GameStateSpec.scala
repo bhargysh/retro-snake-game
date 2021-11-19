@@ -4,7 +4,7 @@ import cats.data.{ReaderT, StateT}
 import cats.effect.IO
 import org.specs2.mutable.Specification
 
-class GameStateSpec extends Specification with BoardActionFixtures {
+class GameStateSpec extends Specification {
   "toGameState" should {
     "return Game with the correct SnakeGameWorld" in {
       val board = SnakeGameWorld.board
@@ -21,7 +21,7 @@ class GameStateSpec extends Specification with BoardActionFixtures {
 
       GameState.toGameState(turn)
         .runA(initialSNG)
-        .unsafeRunSync() should_===(expectedSNG)
+        .unsafeRunSync() should_=== expectedSNG
     }
   }
 }
