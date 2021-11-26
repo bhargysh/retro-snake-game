@@ -15,13 +15,28 @@ class GameStateSpec extends Specification {
         Snake(List(Location(2,3), Location(2,4)), 3, Down),
         SnakeGameWorld.obstacles
       )
-      val turn: Turn[Unit] = ReaderT[P, TurnEnv, Unit]((turnEnv: TurnEnv) => StateT((state: TurnState) => IO(initialTurnState, ())))
+
+      var actualActions: Vector[BoardAction] = Vector.empty[BoardAction]
+      val runner = new ActionRunner[Turn, BoardAction] {
+        def runActions(actions: Vector[BoardAction]): Turn[Unit] =
+          ReaderT.liftF[P, TurnEnv, Unit](StateT.liftF[IO, TurnState, Unit](IO {
+            actualActions = actualActions ++ actions
+            ()
+          }))
+      }
+      val result = for {
+        sng <- new GameState(runner).playTurn(direction = Some(Left))
+      } yield sng
+
       val initialSNG = SnakeGameWorld(board, moveNumber, initialTurnState)
       val expectedSNG = SnakeGameWorld(board, MoveNumber(11), initialTurnState)
-
-      GameState.toGameState(turn)
+      val actualSNG = result
         .runA(initialSNG)
-        .unsafeRunSync() should_=== expectedSNG
+        .unsafeRunSync()
+      val expectedBoardActions: Vector[BoardAction] = Vector(StartTurn(Some(Left)))
+
+      actualSNG should_=== expectedSNG
+      actualActions should contain(expectedBoardActions)
     }
   }
 }

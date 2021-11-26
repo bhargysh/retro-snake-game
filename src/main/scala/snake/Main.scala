@@ -6,7 +6,6 @@ import cats.implicits._
 import cats.{Monad, ~>}
 import org.scalajs.dom.raw.{Element, KeyboardEvent}
 import org.scalajs.dom.{Node, document}
-import snake.GameState.toGameState
 
 import scala.concurrent.duration.{Duration, SECONDS}
 import scala.util.Random
@@ -29,11 +28,12 @@ object Main extends IOApp {
       boardUI <- appendBoardToDocument[Game](renderedWorld)
       renderer <- Renderer[Game](boardUI, html.render, renderedWorld)
       _ <- liftGame(actionOnKeyboardEvent(boardUI))
+      gameState = new GameState(actionRunner)
       gameStep: GameStep[Game] =
         new GameStep[Game](
           getInput[Game](boardUI),
           renderer.renderView,
-          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => toGameState(sng.play[Turn](maybeDirection))
+          (sng: SnakeGameWorld, maybeDirection: Option[Direction]) => gameState.playTurn(maybeDirection)
         )
       _ <- loop[SnakeGameWorld, Game](gameStep.updateGame, liftGame)(world)
     } yield ExitCode.Success
